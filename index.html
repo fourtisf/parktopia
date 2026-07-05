@@ -206,7 +206,7 @@
     <p class="tip">🏗️ Buying a plot <b>opens its attraction automatically</b> — no picking, no building. Just unlock, collect, upgrade.</p>
     <p class="tip">💵 Guests ride your attractions and pay at the <b>💰 CASHIER booth in front of each ride</b>. Walk up to the cashier to vacuum the money.</p>
     <p class="tip">⬆️ Stand on the <b>⬆ pad beside the cashier booth</b> to upgrade the ride: more income, +2 seats, and the ride <b>physically grows bigger</b>.</p>
-    <p class="tip">🎛️ Rides run <b>automatically</b>: max riders board (more seats each level), the cycle runs a few seconds, then the next group in line swaps in. Guests who queue too long leave angry.</p>
+    <p class="tip">🎛️ Rides run <b>automatically</b>: max riders board (more seats each level), the cycle runs a few seconds, then the next group in line swaps in — watch your guests actually ride! Guests who queue too long leave angry.</p>
     <p class="tip">🧑‍💼 Hire a <b>Collector</b> ($750, plaza desk) — they walk booth to booth and gather your money for you.</p>
     <p class="tip">🎟️ Guests pay tickets at the entrance booth — collect them there. Premium rides need tickets to unlock.</p>
     <p class="tip">🔓 <b>1 land = 1 ride.</b> Stand at a NEW LAND sign and pay to buy the plot — the attraction opens instantly. 12 plots total.</p>
@@ -223,7 +223,7 @@
   <div class="ctl">WASD / joystick to move · stand on pads to build & upgrade<br>walk near money to collect it</div>
 </div>
 
-<div id="verTag">PARKTOPIA v1.5 HD — prototype</div>
+<div id="verTag">PARKTOPIA v1.6 HD — prototype</div>
 <script>
 /* ================================================================
    PARKTOPIA HD v0.4 — 12 plots, 1 land = 1 ride (Three.js)
@@ -674,7 +674,7 @@ function updateRides(dt){
       else if(r.queue.length>0){
         const n=Math.min(capOf(r),r.queue.length);
         r.riders=r.queue.splice(0,n);
-        for(const g of r.riders)g.state='riding';
+        r.riders.forEach((g,i)=>{g.state='riding';if(VIS)visSeatGuest(r,g,i);});
         r.state='run';r.t=0;
         if(S.tut===1)S.tut=2;
       }
@@ -683,6 +683,7 @@ function updateRides(dt){
       if(r.t>=def.dur){
         const pay=Math.round(def.inc*incMul(r)*gloveMul());
         for(const g of r.riders){
+          if(VIS)visUnseatGuest(g);
           g.x=r.pad.exit.x+rnd(-0.4,0.4);g.y=r.pad.exit.y+rnd(-0.4,0.4);
           g.plot=r.pad.z;g.route=[];
           g.ridesDone++;g.last=r;
@@ -1651,7 +1652,11 @@ function makePerson(o){
 
 /* ================================================================
    RIDE FACTORIES
+   Each ride exposes `seats`: mount points that move with the ride.
+   Boarding guests are re-parented onto a seat so the actual visitor
+   models visibly ride along until the cycle ends.
    ================================================================ */
+function mkSeat(parent,x,y,z){const s=new THREE.Group();s.position.set(x,y,z);parent.add(s);return s;}
 function factoryStand(cfg){
   return function(r){
     const grp=new THREE.Group();
@@ -1696,26 +1701,27 @@ carousel(r){
   grp.add(M(GEO.cyl,mat('#f7ead2'),1.9,.12,1.9,0,.06,0,true,true));
   const trim=new THREE.Mesh(new THREE.TorusGeometry(.93,.045,10,36),mat('#e04b4b'));
   trim.rotation.x=Math.PI/2;trim.position.y=.13;grp.add(trim);
-  grp.add(M(GEO.cyl,mat('#e9e9f5'),.15,1.15,.15,0,.7,0));
+  grp.add(M(GEO.cyl,mat('#e9e9f5'),.15,1.35,.15,0,.78,0));
   const roof=new THREE.Mesh(new THREE.ConeGeometry(1.06,.62,12),mat('#e63b3b',{flatShading:true}));
-  roof.position.y=1.56;roof.castShadow=true;grp.add(roof);
+  roof.position.y=1.74;roof.castShadow=true;grp.add(roof);
   for(let i=0;i<8;i++){const a=i*Math.PI/4;
-    grp.add(M(GEO.sph,mat('#ffffff'),.17,.17,.17,Math.cos(a)*.99,1.26,Math.sin(a)*.99,false));}
-  grp.add(M(GEO.sph,mat('#ffd23f',{roughness:.4}),.20,.20,.20,0,1.92,0));
+    grp.add(M(GEO.sph,mat('#ffffff'),.17,.17,.17,Math.cos(a)*.99,1.44,Math.sin(a)*.99,false));}
+  grp.add(M(GEO.sph,mat('#ffd23f',{roughness:.4}),.20,.20,.20,0,2.10,0));
   const spinner=new THREE.Group();grp.add(spinner);
   const HC=['#ff6fa5','#59baff','#ffd23f','#7ed06a','#c07fff'];
-  const horses=[];
+  const horses=[],seats=[];
   for(let i=0;i<5;i++){
     const a=i*Math.PI*2/5;
     const u=new THREE.Group();
-    u.position.set(Math.cos(a)*.62,0,Math.sin(a)*.62);
+    u.position.set(Math.cos(a)*.80,0,Math.sin(a)*.80);
     u.rotation.y=-a+Math.PI/2;
     u.add(M(GEO.cyl,mat('#c9c9e2'),.06,.95,.06,0,.62,0));
     u.add(M(GEO.sph,mat(HC[i]),.30,.20,.17,0,.52,0));
     u.add(M(GEO.sph,mat(HC[i]),.15,.14,.12,0,.62,.17));
+    seats.push(mkSeat(u,0,.60,-.02));
     spinner.add(u);horses.push({u,ph:i});
   }
-  return {grp,anim(dt){
+  return {grp,seats,anim(dt){
     spinner.rotation.y-=dt*(r.state==='run'?1.6:.35);
     const run=r.state==='run';
     for(const h of horses)h.u.position.y=run?Math.sin(S.t*6+h.ph)*.09:0;
@@ -1730,7 +1736,7 @@ teacup(r){
   grp.add(M(GEO.sph,mat('#ffd23f',{roughness:.4}),.16,.16,.16,0,.62,0));
   const spinner=new THREE.Group();spinner.position.y=.12;grp.add(spinner);
   const CUP=['#59baff','#7ed06a','#ffd23f','#c07fff'];
-  const cups=[],heads=[];
+  const cups=[],seats=[];
   for(let i=0;i<4;i++){
     const a=i*Math.PI/2;
     const cg=new THREE.Group();
@@ -1740,16 +1746,13 @@ teacup(r){
     cg.add(M(GEO.cyl,mat('#7a4b2a'),.34,.02,.34,0,.31,0,false));
     const handle=new THREE.Mesh(new THREE.TorusGeometry(.11,.035,8,14,Math.PI),mat(CUP[i]));
     handle.position.set(.23,.18,0);handle.rotation.z=-Math.PI/2;cg.add(handle);
-    const h1=M(GEO.sph,mat(SKINS[i%4]),.12,.12,.12,-.07,.36,0,false);
-    const h2=M(GEO.sph,mat(SKINS[(i+1)%4]),.12,.12,.12,.08,.36,.05,false);
-    h1.visible=h2.visible=false;cg.add(h1,h2);heads.push(h1,h2);
+    seats.push(mkSeat(cg,-.10,.20,0),mkSeat(cg,.10,.20,.05));
     spinner.add(cg);cups.push(cg);
   }
-  return {grp,anim(dt){
+  return {grp,seats,anim(dt){
     const run=r.state==='run';
     spinner.rotation.y+=dt*(run?1.4:.3);
     for(const c of cups)c.rotation.y-=dt*(run?4.5:.6);
-    for(const h of heads)h.visible=run;
   }};
 },
 bumper(r){
@@ -1767,7 +1770,7 @@ bumper(r){
     grp.add(b);bulbs.push(b);
   }
   const CC=['#ff5d5d','#ffd23f','#59d5ff','#7ed06a','#ff9d76','#c07fff'];
-  const cars=[];
+  const cars=[],seats=[];
   for(let i=0;i<6;i++){
     const cg=new THREE.Group();
     const tire=new THREE.Mesh(new THREE.TorusGeometry(.17,.075,8,18),mat('#2c2c34'));
@@ -1775,9 +1778,10 @@ bumper(r){
     cg.add(M(GEO.sph,mat(CC[i]),.28,.22,.28,0,.17,0));
     cg.add(M(GEO.cyl,mat('#556'),.035,.36,.035,0,.40,0,false));
     cg.add(M(GEO.sph,mat('#ffd23f',{roughness:.4}),.09,.09,.09,0,.58,0,false));
+    seats.push(mkSeat(cg,0,.22,-.06));
     grp.add(cg);cars.push({cg,p1:rnd(6.28),p2:rnd(6.28),w1:.9+rnd(.5),w2:.8+rnd(.5)});
   }
-  return {grp,anim(dt){
+  return {grp,seats,anim(dt){
     const run=r.state==='run';
     bulbs.forEach((b,i)=>{b.material=((Math.floor(S.t*3)+i)%2)?bmA:bmB;});
     cars.forEach((c,i)=>{
@@ -1811,22 +1815,18 @@ pirate(r){
   boat.add(M(GEO.box,mat('#8a5220'),1.3,.08,.48,0,.10,0));
   boat.add(M(GEO.sph,mat('#a5682a'),.16,.18,.42,-.65,.02,0));
   boat.add(M(GEO.sph,mat('#a5682a'),.16,.18,.42,.65,.02,0));
-  const riders=[];
+  const seats=[];
   for(let i=0;i<4;i++){
     boat.add(M(GEO.box,mat('#e04b4b'),.16,.16,.30,-.45+i*.3,.16,0,false));
-    const hd=M(GEO.sph,mat(SKINS[i%4]),.16,.16,.16,-.45+i*.3,.30,.05,false);
-    hd.visible=false;boat.add(hd);riders.push(hd);
+    seats.push(mkSeat(boat,-.45+i*.3,.22,-.08),mkSeat(boat,-.45+i*.3,.22,.09));
   }
-  return {grp,anim(dt){
+  return {grp,seats,anim(dt){
     let th;
     if(r.state==='run'){
       const amp=0.95*Math.min(1,r.anim*2.5)*(r.anim>0.85?(1-r.anim)/0.15:1);
       th=Math.sin(r.t*3.2)*amp;
     }else th=Math.sin(S.t*0.9)*0.06;
     swing.rotation.x=th;
-    const run=r.state==='run';
-    riders.forEach((h,i)=>{h.visible=run;
-      if(run)h.position.y=.30+Math.sin(S.t*9+i)*.03;});
   }};
 },
 swing(r){
@@ -1839,25 +1839,23 @@ swing(r){
   grp.add(M(GEO.sph,mat('#ffd23f',{roughness:.4}),.18,.18,.18,0,2.7,0));
   const spin=new THREE.Group();spin.position.y=2.42;grp.add(spin);
   const SC=['#ff5d5d','#59baff','#ffd23f','#7ed06a','#c07fff','#ff9d76'];
-  const chains=[],heads=[];
+  const chains=[],seats=[];
   for(let i=0;i<6;i++){
     const a=i*Math.PI/3;
     const cg=new THREE.Group();cg.rotation.y=a;
     const pivot=new THREE.Group();pivot.position.set(.85,-.05,0);
     pivot.add(M(GEO.cyl,mat('#8b93a8'),.035,1.05,.035,0,-.52,0,false));
     pivot.add(M(GEO.box,mat(SC[i]),.24,.09,.24,0,-1.06,0));
-    const hd=M(GEO.sph,mat(SKINS[i%4]),.15,.15,.15,0,-.92,0,false);
-    hd.visible=false;pivot.add(hd);heads.push(hd);
+    seats.push(mkSeat(pivot,0,-1.02,0));
     cg.add(pivot);spin.add(cg);chains.push({pivot,ph:i});
   }
   let flare=.25;
-  return {grp,anim(dt){
+  return {grp,seats,anim(dt){
     const run=r.state==='run';
     const ramp=run?Math.min(1,r.anim*2.2)*(r.anim>0.86?(1-r.anim)/0.14:1):0;
     spin.rotation.y+=dt*(0.3+ramp*2.0);
     flare=lerp(flare,.25+ramp*.72,Math.min(1,dt*3));
     for(const c of chains)c.pivot.rotation.z=flare+Math.sin(S.t*3+c.ph)*.04*ramp;
-    for(const h of heads)h.visible=run;
   }};
 },
 ferris(r){
@@ -1879,7 +1877,7 @@ ferris(r){
     sp.rotation.z=i*Math.PI/8;wheel.add(sp);
   }
   const CABC=['#ff5d5d','#ffd23f','#59d5ff','#7ed06a','#ff7eb6','#c07fff','#ff9d76','#7ee8d8'];
-  const cabins=[];
+  const cabins=[],seats=[];
   for(let i=0;i<8;i++){
     const a=i*Math.PI/4;
     const cg=new THREE.Group();
@@ -1887,10 +1885,11 @@ ferris(r){
     cg.add(M(GEO.box,mat(CABC[i]),.26,.24,.22,0,-.17,0));
     cg.add(M(GEO.box,mat('#ffffff'),.16,.10,.23,0,-.15,0,false));
     cg.add(M(GEO.cyl,mat(CABC[i]),.20,.05,.18,0,-.03,0,false));
+    seats.push(mkSeat(cg,0,-.26,.06));
     wheel.add(cg);cabins.push(cg);
   }
   let ang=0;
-  return {grp,anim(dt){
+  return {grp,seats,anim(dt){
     ang+=dt*(r.state==='run'?.9:.18);
     wheel.rotation.z=ang;
     for(const c of cabins)c.rotation.z=-ang;
@@ -1909,14 +1908,13 @@ drop(r){
   const car=new THREE.Group();car.position.y=.4;grp.add(car);
   const ring=new THREE.Mesh(new THREE.TorusGeometry(.55,.09,10,28),mat('#ffd23f'));
   ring.rotation.x=Math.PI/2;car.add(ring);
-  const heads=[];
+  const seats=[];
   for(let i=0;i<8;i++){
     const a=i*Math.PI/4;
     car.add(M(GEO.box,mat('#3f6ff2'),.20,.18,.20,Math.cos(a)*.55,.10,Math.sin(a)*.55,false));
-    const hd=M(GEO.sph,mat(SKINS[i%4]),.13,.13,.13,Math.cos(a)*.55,.26,Math.sin(a)*.55,false);
-    hd.visible=false;car.add(hd);heads.push(hd);
+    seats.push(mkSeat(car,Math.cos(a)*.55,.20,Math.sin(a)*.55));
   }
-  return {grp,anim(dt){
+  return {grp,seats,anim(dt){
     const run=r.state==='run';
     lamp.material=run&&(Math.floor(S.t*6)%2)?lampB:lampA;
     let y;
@@ -1929,7 +1927,6 @@ drop(r){
       else y=.4;
     }else y=.4+Math.sin(S.t*1.4)*.04;
     car.position.y=y;
-    for(const h of heads)h.visible=run;
   }};
 },
 coaster(r){
@@ -1949,19 +1946,15 @@ coaster(r){
   }
   grp.add(M(GEO.box,mat('#7C5CFF'),.7,.14,.5,curve.getPointAt(0).x,.09,curve.getPointAt(0).z,true,true));
   const CC2=['#e63b3b','#ffd23f','#59d5ff'];
-  const cars=[],heads=[];
+  const cars=[],seats=[];
   for(let k=0;k<3;k++){
     const car=new THREE.Group();
     car.add(M(GEO.box,mat(CC2[k]),.34,.18,.24,0,0,0));
-    const h1=M(GEO.sph,mat(SKINS[k%4]),.12,.12,.12,-.07,.16,0,false);
-    const h2=M(GEO.sph,mat(SKINS[(k+2)%4]),.12,.12,.12,.09,.16,0,false);
-    h1.visible=h2.visible=false;
-    car.add(h1,h2);heads.push(h1,h2);
+    seats.push(mkSeat(car,-.08,.10,0),mkSeat(car,.10,.10,0));
     grp.add(car);cars.push(car);
   }
   const tmp=new THREE.Vector3();
-  return {grp,anim(dt){
-    const run=r.state==='run';
+  return {grp,seats,anim(dt){
     for(let k=0;k<3;k++){
       const u=((r.u/(Math.PI*2))-k*.05+2)%1;
       const p=curve.getPointAt(u);
@@ -1970,7 +1963,6 @@ coaster(r){
       tmp.copy(p).add(t);tmp.y+=.11;
       cars[k].lookAt(tmp);
     }
-    for(const h of heads)h.visible=run;
   }};
 },
 };
@@ -2020,7 +2012,7 @@ function visAddRide(r){
   const lvlLabel=makeLabel(.55);
   lvlLabel.sp.position.set(r.cx,2.7,r.cy);lvlLabel.sp.visible=false;
   scene.add(lvlLabel.sp);
-  r.vis={grp:b.grp,anim:b.anim,lvlLabel,tray:makeTrayVis(r.pad.tray),kasir:buildKasir(r.pad)};
+  r.vis={grp:b.grp,anim:b.anim,seats:b.seats||[],lvlLabel,tray:makeTrayVis(r.pad.tray),kasir:buildKasir(r.pad)};
   buildPoster(r);
   visPuff(r.cx,r.cy,16);
   visPuff(r.pad.kasir.x,r.pad.kasir.y,8);
@@ -2064,9 +2056,32 @@ function visAddGuest(g){
   scene.add(v.g);
   g.vis=v;
 }
+/* Seat a boarding guest on the ride so their actual model rides along */
+function visSeatGuest(r,g,i){
+  const v=g.vis;if(!v)return;
+  const seat=r.vis&&r.vis.seats[i];
+  if(!seat){g._seat=null;if(v.g.parent!==scene)scene.add(v.g);v.g.visible=false;return;}
+  g._seat=seat;
+  if(g._em){v.g.remove(g._em);g._em=null;g._emCh=null;}
+  seat.add(v.g);
+  v.g.position.set(0,0,0);v.g.rotation.set(0,0,0);
+  v.g.scale.setScalar(.92/rideScale(r));
+  v.lL.rotation.x=1.1;v.lR.rotation.x=1.1;
+  v.body.position.y=.44;
+  v.g.visible=true;
+}
+function visUnseatGuest(g){
+  const v=g.vis;if(!v)return;
+  g._seat=null;
+  scene.add(v.g);
+  v.g.rotation.set(0,0,0);
+  v.g.scale.setScalar(.92);
+  v.lL.rotation.x=0;v.lR.rotation.x=0;
+  v.g.visible=true;
+}
 function visRemoveGuest(g){
   if(g._em){g.vis.g.remove(g._em);g._em=null;}
-  if(g.vis)scene.remove(g.vis.g);
+  if(g.vis&&g.vis.g.parent)g.vis.g.parent.remove(g.vis.g);
 }
 function visAddPickup(p){
   const m=new THREE.Mesh(new THREE.OctahedronGeometry(.19,0),
@@ -2280,9 +2295,13 @@ function visSync(dt){
   }
   for(const g of guests){
     const v=g.vis;if(!v)continue;
-    const hidden=(g.state==='riding'&&g.ride&&!DEFS[g.ride.type].dwell);
-    v.g.visible=!hidden;
-    if(hidden){if(g._em){v.g.remove(g._em);g._em=null;g._emCh=null;}continue;}
+    if(g.state==='riding'&&g.ride&&!DEFS[g.ride.type].dwell){
+      /* seated riders are parented to their seat and follow the ride; overflow stays hidden */
+      if(g._em){v.g.remove(g._em);g._em=null;g._emCh=null;}
+      v.g.visible=!!g._seat;
+      continue;
+    }
+    v.g.visible=true;
     v.g.position.set(g.x,0,g.y);
     v.g.rotation.y=g.head;
     const walking=['toQueue','enter','leave','exit','wander'].includes(g.state);
