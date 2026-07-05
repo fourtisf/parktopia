@@ -206,7 +206,7 @@
     <p class="tip">🏗️ Buying a plot <b>opens its attraction automatically</b> — no picking, no building. Just unlock, collect, upgrade.</p>
     <p class="tip">💵 Guests ride your attractions and pay at the <b>💰 CASHIER booth in front of each ride</b>. Walk up to the cashier to vacuum the money.</p>
     <p class="tip">⬆️ Stand on the <b>⬆ pad beside the cashier booth</b> to upgrade the ride: more income, +2 seats, and the ride <b>physically grows bigger</b>.</p>
-    <p class="tip">🎛️ Rides run <b>automatically</b>: max riders board (more seats each level), the cycle runs a few seconds, then the next group in line swaps in — watch your guests actually ride! Guests who queue too long leave angry.</p>
+    <p class="tip">🎛️ Rides <b>gather a full load first</b> — the sign by the queue counts them (e.g. 3/5). Once every seat is claimed everyone boards together and the cycle runs; if the queue stays short for ~9s the ride departs anyway. Guests who queue too long leave angry.</p>
     <p class="tip">🧑‍💼 Hire a <b>Collector</b> ($750, plaza desk) — they walk booth to booth and gather your money for you.</p>
     <p class="tip">🎟️ Guests pay tickets at the entrance booth — collect them there. Premium rides need tickets to unlock.</p>
     <p class="tip">🔓 <b>1 land = 1 ride.</b> Stand at a NEW LAND sign and pay to buy the plot — the attraction opens instantly. 12 plots total.</p>
@@ -223,7 +223,7 @@
   <div class="ctl">WASD / joystick to move · stand on pads to build & upgrade<br>walk near money to collect it</div>
 </div>
 
-<div id="verTag">PARKTOPIA v1.6 HD — prototype</div>
+<div id="verTag">PARKTOPIA v1.7 HD — prototype</div>
 <script>
 /* ================================================================
    PARKTOPIA HD v0.4 — 12 plots, 1 land = 1 ride (Three.js)
@@ -570,7 +570,7 @@ function guestPickNext(g){
   if(g.ridesDone>=4||(g.ridesDone>=1&&Math.random()<.10)){
     g.state='leave';routeTo(g,null,23.9,40.0);return;
   }
-  const cands=rides.filter(r=>r.queue.length<Math.min(capOf(r),8)&&r!==g.last);
+  const cands=rides.filter(r=>r.queue.length<capOf(r)+6&&r!==g.last);
   if(!cands.length){
     g.state='wander';g.wanderT=rnd(2,4);
     const zs=ZONES.filter(z=>z.unlocked);
@@ -672,12 +672,17 @@ function updateRides(dt){
       r.spin+=dt*0.4;
       if(r.rest>0)r.rest-=dt;
       else if(r.queue.length>0){
-        const n=Math.min(capOf(r),r.queue.length);
-        r.riders=r.queue.splice(0,n);
-        r.riders.forEach((g,i)=>{g.state='riding';if(VIS)visSeatGuest(r,g,i);});
-        r.state='run';r.t=0;
-        if(S.tut===1)S.tut=2;
-      }
+        /* gather first: rides depart when the queue fills every seat,
+           or after ~9s so a quiet park still keeps rides moving */
+        r.boardT=(r.boardT||0)+dt;
+        if(def.dwell||r.queue.length>=capOf(r)||r.boardT>9){
+          const n=Math.min(capOf(r),r.queue.length);
+          r.riders=r.queue.splice(0,n);
+          r.riders.forEach((g,i)=>{g.state='riding';if(VIS)visSeatGuest(r,g,i);});
+          r.state='run';r.t=0;r.boardT=0;
+          if(S.tut===1)S.tut=2;
+        }
+      }else r.boardT=0;
     }else{
       r.t+=dt;r.anim=r.t/def.dur;r.spin+=dt*2.4;
       if(r.t>=def.dur){
@@ -1486,35 +1491,43 @@ function buildAirBalloon(x,y){
 function buildPoster(r){
   const p=r.pad,z=p.z;
   const px=p.qp.x+p.dir.x*0.4;
-  const py=clamp(p.qp.y+1.35,z.y+0.7,z.y+z.h-0.7);
+  const py=clamp(p.qp.y-1.35,z.y+0.7,z.y+z.h-0.7);
   const g=new THREE.Group();g.position.set(px,0,py);
-  g.rotation.y=Math.atan2(p.dir.x,0.0001);
+  /* face south: the camera always looks at the park from the south */
   g.add(M(GEO.box,mat('#6b5ce0'),.13,.9,.13,0,.45,0));
   g.add(M(GEO.box,mat('#5a4cc9'),.5,.12,.4,0,.06,0,true,true));
   const cv=document.createElement('canvas');cv.width=128;cv.height=160;
   const cc=cv.getContext('2d');
   const tex=new THREE.CanvasTexture(cv);
   const side=mat('#5a4cc9');
-  const board=new THREE.Mesh(new THREE.BoxGeometry(.85,1.05,.08),
+  const board=new THREE.Mesh(new THREE.BoxGeometry(1.05,1.3,.08),
     [side,side,side,side,new THREE.MeshStandardMaterial({map:tex,roughness:.8}),side]);
-  board.position.y=1.35;board.castShadow=true;g.add(board);
+  board.position.y=1.55;board.castShadow=true;g.add(board);
   scene.add(g);
   r.poster={cc,tex,last:''};
   syncPoster(r);
 }
+/* counter sign: while gathering it counts the queue (purple), while
+   running it shows how many guests are on board (green) */
 function syncPoster(r){
   if(!r.poster)return;
-  const txt=Math.min(r.queue.length,99)+'/'+capOf(r);
-  if(r.poster.last===txt)return;r.poster.last=txt;
+  const run=r.state==='run'&&!DEFS[r.type].dwell;
+  const n=run?r.riders.length:r.queue.length;
+  const txt=Math.min(n,99)+'/'+capOf(r);
+  const key=txt+(run?'R':'Q');
+  if(r.poster.last===key)return;r.poster.last=key;
+  const col=run?'#2f9d44':'#5a4cc9';
   const c=r.poster.cc;
   c.fillStyle='#ffffff';c.fillRect(0,0,128,160);
-  c.strokeStyle='#5a4cc9';c.lineWidth=8;c.strokeRect(4,4,120,152);
-  c.font='58px "Segoe UI Emoji","Apple Color Emoji",sans-serif';
+  c.strokeStyle=col;c.lineWidth=8;c.strokeRect(4,4,120,152);
+  c.font='54px "Segoe UI Emoji","Apple Color Emoji",sans-serif';
   c.textAlign='center';c.textBaseline='middle';
-  c.fillText(DEFS[r.type].ico,64,58);
-  c.fillStyle='#5a4cc9';c.fillRect(8,108,112,44);
-  c.fillStyle='#fff';c.font='800 34px "Baloo 2",sans-serif';
-  c.fillText(txt,64,131);
+  c.fillText(DEFS[r.type].ico,64,52);
+  c.fillStyle=col;c.fillRect(8,96,112,56);
+  c.fillStyle='#fff';c.font='800 36px "Baloo 2",sans-serif';
+  c.fillText(txt,64,117);
+  c.font='800 15px "Baloo 2",sans-serif';
+  c.fillText(run?'RIDING':'WAITING',64,141);
   r.poster.tex.needsUpdate=true;
 }
 /* Front cashier booth: open counter so the attendant stays visible from the game camera;
