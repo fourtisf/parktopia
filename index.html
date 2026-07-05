@@ -204,8 +204,8 @@
     <h2>❓ How to play <button id="closeHelp">✕</button></h2>
     <p class="tip">🚶 Move with <span class="kbd">W</span><span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span> / arrow keys, or drag the <b>joystick</b> on mobile.</p>
     <p class="tip">🏗️ Buying a plot <b>opens its attraction automatically</b> — no picking, no building. Just unlock, collect, upgrade.</p>
-    <p class="tip">💵 Guests ride your attractions and drop money. <b>Walk near the money piles</b> to vacuum them up.</p>
-    <p class="tip">⬆️ Stand on the <b>⬆ pad</b> next to a ride to upgrade it: more income, +2 seats, and the ride <b>physically grows bigger</b>.</p>
+    <p class="tip">💵 Guests ride your attractions and pay at the <b>💰 CASHIER booth in front of each ride</b>. Walk up to the cashier to vacuum the money.</p>
+    <p class="tip">⬆️ Stand on the <b>⬆ pad beside the cashier booth</b> to upgrade the ride: more income, +2 seats, and the ride <b>physically grows bigger</b>.</p>
     <p class="tip">🎛️ Rides only run with an <b>operator at the lever</b> — that's you at first! Max riders board, the cycle runs ~7s, the rest wait in line. Guests who queue too long leave angry.</p>
     <p class="tip">🧑‍💼 Hire an <b>Operator</b> ($750, plaza desk) — they patrol to the longest queue, run the ride, then collect your trays.</p>
     <p class="tip">🎟️ Guests pay tickets at the entrance booth — collect them there. Premium rides need tickets to unlock.</p>
@@ -218,12 +218,12 @@
 <div id="startOv">
   <div class="logoFerris">🎡</div>
   <h1>PARK<span>TOPIA</span></h1>
-  <div class="sub">✦ HD · GIANT LANDS · FRONT UPGRADES ✦</div>
+  <div class="sub">✦ HD · GIANT LANDS · FRONT CASHIERS ✦</div>
   <div class="play">▶ &nbsp;TAP TO PLAY</div>
   <div class="ctl">WASD / joystick to move · stand on pads to build & upgrade<br>walk near money to collect it</div>
 </div>
 
-<div id="verTag">PARKTOPIA v1.1 HD — prototype</div>
+<div id="verTag">PARKTOPIA v1.2 HD — prototype</div>
 <script>
 /* ================================================================
    PARKTOPIA HD v0.4 — 12 plots, 1 land = 1 ride (Three.js)
@@ -387,19 +387,21 @@ function onPath(tx,ty){
   return false;
 }
 
-/* ---------- One pad per plot (front-facing upgrade & tray) ---------- */
+/* ---------- One pad per plot (front cashier booth: money tray at the booth, upgrade pad beside it) ---------- */
 const pads=ZONES.map((z,i)=>{
   const cx=z.x+z.w/2,cy=z.y+z.h/2;
   const dir={x:Math.sign(z.gate.x-cx)||1,y:0};
   const cl=pt=>({x:clamp(pt.x,z.x+0.6,z.x+z.w-0.6),y:clamp(pt.y,z.y+0.6,z.y+z.h-0.6)});
   const eh=Math.min(2.6,z.h/2-0.7);
   const qd=Math.min(3.6,z.w/2-0.6);
+  const kasir=cl({x:dir.x>0?z.x+z.w-1.1:z.x+1.1,y:cy+eh});
   const pad={id:i,zone:i,z,type:z.type,cost:z.cost,tCost:z.tCost,cx,cy,dir,built:null,
     qp:cl({x:cx+dir.x*qd,y:cy}),
     exit:cl({x:cx,y:cy-eh}),
-    up:cl({x:cx-dir.x*1.5,y:cy+eh}),
+    kasir,
+    up:cl({x:kasir.x-dir.x*2.0,y:kasir.y}),
     op:cl({x:cx+dir.x*qd,y:cy-Math.min(1.6,eh)}),
-    tray:cl({x:cx+dir.x*1.5,y:cy+eh})};
+    tray:cl({x:kasir.x,y:kasir.y-1.15})};
   z.pad=pad;
   const ex0=Math.min(z.gate.x,dir.x>0?z.x+z.w-0.2:z.x+0.2)-0.35;
   const ex1=Math.max(z.gate.x,dir.x>0?z.x+z.w-0.2:z.x+0.2)+0.35;
@@ -706,7 +708,10 @@ function playerSpeed(){return 3.7*(1+0.2*S.shoes);}
 function collectRadius(){return 1.9*(1+0.35*S.magnet);}
 function blockers(){
   const b=[];
-  for(const r of rides)b.push({x:r.cx,y:r.cy,rad:clamp(0.9*rideScale(r),0.9,Math.min(r.pad.z.w,r.pad.z.h)/2-0.95)});
+  for(const r of rides){
+    b.push({x:r.cx,y:r.cy,rad:clamp(0.9*rideScale(r),0.9,Math.min(r.pad.z.w,r.pad.z.h)/2-0.95)});
+    b.push({x:r.pad.kasir.x,y:r.pad.kasir.y,rad:0.55});
+  }
   b.push({x:booth.cx,y:booth.cy,rad:0.7});
   return b;
 }
@@ -1005,8 +1010,8 @@ function addXP(a){
 const TUT_TXT=[
   'Walk to the <b>NEW LAND sign</b> & stand still — buy your first ride!',
   'Guests are queuing! Stand at the <b>❗ lever</b> to run the ride',
-  '<b>Walk to the money pile</b> to collect 💵',
-  'Stand on the <b>⬆ pad</b> beside your ride to upgrade it',
+  'Collect 💵 at the <b>💰 CASHIER booth</b> in front of the ride',
+  'Stand on the <b>⬆ pad</b> beside the cashier to upgrade the ride',
   'Save up & buy the <b>next land</b> — hire an operator to automate ➜',
 ];
 function tutTarget(){
@@ -1537,6 +1542,31 @@ function syncPoster(r){
   c.fillText(txt,64,131);
   r.poster.tex.needsUpdate=true;
 }
+/* Front cashier booth: sits at the plot entrance; ride money piles up here */
+const kasirBobs=[];
+function buildKasir(pad){
+  const g=new THREE.Group();
+  g.add(M(GEO.box,mat('#8f7bff'),1.05,.72,.62,0,.36,0,true,true));
+  g.add(M(GEO.box,mat('#6b5ce0'),1.14,.10,.70,0,.76,0));
+  g.add(M(GEO.box,mat('#eaf2ff',{roughness:.2}),.72,.26,.06,0,.52,.29,false));
+  g.add(M(GEO.box,mat('#ffd23f'),.92,.07,.34,0,.80,.30,false));
+  for(const sx of [-.48,.48])g.add(M(GEO.box,mat('#6b5ce0'),.08,.70,.08,sx,1.10,.22,false));
+  for(let i=0;i<4;i++){
+    const aw=M(GEO.box,mat(i%2?'#ffffff':'#e05252'),.29,.05,.55,-.44+i*.29,1.50,.10);
+    aw.rotation.x=.5;g.add(aw);
+  }
+  const p=makePerson({col:'#ffd23f',skin:pick(SKINS),hat:false,scale:.9});
+  p.g.position.set(0,.10,-.08);
+  g.add(p.g);
+  const tag=makeLabel(.5);tag.set('💰 CASHIER',{bg:'#6b5ce0',fg:'#ffffff',fs:38});
+  tag.sp.position.y=2.05;g.add(tag.sp);
+  g.position.set(pad.kasir.x,0,pad.kasir.y);
+  g.rotation.y=Math.atan2(pad.tray.x-pad.kasir.x,pad.tray.y-pad.kasir.y);
+  g.traverse(o=>{if(o.isMesh&&o.castShadow!==false)o.castShadow=true;});
+  scene.add(g);
+  kasirBobs.push({body:p.body,ph:rnd(6.28)});
+  return g;
+}
 let staffVis=null,staffDeskStatus=null;
 function buildStaffDesk(){
   const g=new THREE.Group();
@@ -2016,9 +2046,10 @@ function visAddRide(r){
   const lvlLabel=makeLabel(.55);
   lvlLabel.sp.position.set(r.cx,2.7,r.cy);lvlLabel.sp.visible=false;
   scene.add(lvlLabel.sp);
-  r.vis={grp:b.grp,anim:b.anim,lvlLabel,tray:makeTrayVis(r.pad.tray)};
+  r.vis={grp:b.grp,anim:b.anim,lvlLabel,tray:makeTrayVis(r.pad.tray),kasir:buildKasir(r.pad)};
   buildPoster(r);
   visPuff(r.cx,r.cy,16);
+  visPuff(r.pad.kasir.x,r.pad.kasir.y,8);
 }
 function makePadVis(p){
   const grp=new THREE.Group();grp.position.set(p.cx,0,p.cy);
@@ -2412,6 +2443,7 @@ function visSync(dt){
     f.rip.material.opacity=.55*(1-rp);
   }
   for(const gl of lampGlows)gl.material.emissiveIntensity=.75+Math.sin(S.t*2+gl.id)*.1;
+  for(const k of kasirBobs)k.body.position.y=.44+Math.sin(S.t*2.2+k.ph)*.02;
   camTarget.set(player.x,0,player.y);
   camPos.set(player.x,17.4,player.y+14.3);
   const k=1-Math.pow(0.0009,dt);
