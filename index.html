@@ -206,8 +206,8 @@
     <p class="tip">🏗️ Buying a plot <b>opens its attraction automatically</b> — no picking, no building. Just unlock, collect, upgrade.</p>
     <p class="tip">💵 Guests ride your attractions and pay at the <b>💰 CASHIER booth in front of each ride</b>. Walk up to the cashier to vacuum the money.</p>
     <p class="tip">⬆️ Stand on the <b>⬆ pad beside the cashier booth</b> to upgrade the ride: more income, +2 seats, and the ride <b>physically grows bigger</b>.</p>
-    <p class="tip">🎛️ Rides only run with an <b>operator at the lever</b> — that's you at first! Max riders board, the cycle runs ~7s, the rest wait in line. Guests who queue too long leave angry.</p>
-    <p class="tip">🧑‍💼 Hire an <b>Operator</b> ($750, plaza desk) — they patrol to the longest queue, run the ride, then collect your trays.</p>
+    <p class="tip">🎛️ Rides run <b>automatically</b>: max riders board (more seats each level), the cycle runs a few seconds, then the next group in line swaps in. Guests who queue too long leave angry.</p>
+    <p class="tip">🧑‍💼 Hire a <b>Collector</b> ($750, plaza desk) — they walk booth to booth and gather your money for you.</p>
     <p class="tip">🎟️ Guests pay tickets at the entrance booth — collect them there. Premium rides need tickets to unlock.</p>
     <p class="tip">🔓 <b>1 land = 1 ride.</b> Stand at a NEW LAND sign and pay to buy the plot — the attraction opens instantly. 12 plots total.</p>
   </div>
@@ -223,7 +223,7 @@
   <div class="ctl">WASD / joystick to move · stand on pads to build & upgrade<br>walk near money to collect it</div>
 </div>
 
-<div id="verTag">PARKTOPIA v1.2 HD — prototype</div>
+<div id="verTag">PARKTOPIA v1.3 HD — prototype</div>
 <script>
 /* ================================================================
    PARKTOPIA HD v0.4 — 12 plots, 1 land = 1 ride (Three.js)
@@ -394,14 +394,15 @@ const pads=ZONES.map((z,i)=>{
   const cl=pt=>({x:clamp(pt.x,z.x+0.6,z.x+z.w-0.6),y:clamp(pt.y,z.y+0.6,z.y+z.h-0.6)});
   const eh=Math.min(2.6,z.h/2-0.7);
   const qd=Math.min(3.6,z.w/2-0.6);
-  const kasir=cl({x:dir.x>0?z.x+z.w-1.1:z.x+1.1,y:cy+eh});
+  const edgeX=dir.x>0?z.x+z.w:z.x;              /* front fence line (street side) */
+  const kasir={x:edgeX+dir.x*0.35,y:cy+1.7};    /* booth just OUTSIDE the fence, beside the entrance drive */
   const pad={id:i,zone:i,z,type:z.type,cost:z.cost,tCost:z.tCost,cx,cy,dir,built:null,
     qp:cl({x:cx+dir.x*qd,y:cy}),
     exit:cl({x:cx,y:cy-eh}),
     kasir,
-    up:cl({x:kasir.x-dir.x*2.0,y:kasir.y}),
+    up:cl({x:edgeX-dir.x*1.55,y:cy+1.7}),
     op:cl({x:cx+dir.x*qd,y:cy-Math.min(1.6,eh)}),
-    tray:cl({x:kasir.x,y:kasir.y-1.15})};
+    tray:{x:kasir.x,y:cy+0.75}};
   z.pad=pad;
   const ex0=Math.min(z.gate.x,dir.x>0?z.x+z.w-0.2:z.x+0.2)-0.35;
   const ex1=Math.max(z.gate.x,dir.x>0?z.x+z.w-0.2:z.x+0.2)+0.35;
@@ -498,7 +499,7 @@ function buildRide(pad){
   const type=pad.type;
   const r={
     type,pad,lvl:1,baseCost:pad.cost,state:'idle',t:0,anim:0,spin:rnd(6.28),u:rnd(6.28),
-    queue:[],riders:[],tray:{c:0,t:0},drainT:0,pop:0.5,
+    queue:[],riders:[],tray:{c:0,t:0},drainT:0,pop:0.5,rest:0,
     cx:pad.cx,cy:pad.cy,
   };
   pad.built=r;
@@ -659,13 +660,7 @@ function updateGuests(dt){
   }
 }
 
-/* ---------- Ride cycle ---------- */
-function rideOperated(r){
-  if(dist(player.x,player.y,r.pad.op.x,r.pad.op.y)<1.35)return true;
-  if(staff&&staff.state==='operate'&&staff.b===r
-     &&dist(staff.x,staff.y,r.pad.op.x,r.pad.op.y)<1.4)return true;
-  return false;
-}
+/* ---------- Ride cycle (fully automatic: board max riders, run, swap in the next group) ---------- */
 function updateRides(dt){
   for(const r of rides){
     const def=DEFS[r.type];
@@ -675,7 +670,8 @@ function updateRides(dt){
     }
     if(r.state==='idle'){
       r.spin+=dt*0.4;
-      if(r.queue.length>0&&rideOperated(r)){
+      if(r.rest>0)r.rest-=dt;
+      else if(r.queue.length>0){
         const n=Math.min(capOf(r),r.queue.length);
         r.riders=r.queue.splice(0,n);
         for(const g of r.riders)g.state='riding';
@@ -695,7 +691,7 @@ function updateRides(dt){
           guestPickNext(g);
         }
         r.pop=0.4;
-        r.riders=[];r.state='idle';r.anim=0;
+        r.riders=[];r.state='idle';r.anim=0;r.rest=0.9;
       }
     }
     if(r.pop>0)r.pop-=dt;
@@ -811,15 +807,11 @@ function hireStaff(){
   staff={x:staffPost.x,y:staffPost.y-0.4,tx:staffPost.x,ty:staffPost.y,
     speed:3.9,head:0,phase:rnd(6.28),plot:null,route:[],
     state:'idle',b:null,collT:0,idleT:0};
-  toast('🧑‍💼 Operator hired — they run rides & collect for you!','gold');
+  toast('🧑‍💼 Collector hired — they gather money from your cashiers!','gold');
   snd.level();confetti();
   if(VIS)visAddStaff();
 }
 function staffTask(){
-  let best=null,bl=0;
-  for(const r of rides)
-    if(r.state==='idle'&&r.queue.length>bl){bl=r.queue.length;best=r;}
-  if(best)return {k:'op',r:best};
   const t=staffTargets()[0];
   if(t)return {k:'coll',b:t.b,tp:t.tp,z:t.z};
   return null;
@@ -834,38 +826,20 @@ function staffTargets(){
 }
 function updateStaff(dt){
   if(!staff)return;
-  const moving=staff.state==='goOp'||staff.state==='go';
-  staff.phase+=dt*(moving?9:2);
+  staff.phase+=dt*(staff.state==='go'?9:2);
   if(staff.state==='idle'){
     staff.idleT-=dt;
     if(staff.idleT<=0){
       staff.idleT=.45;
       const t=staffTask();
       if(t){
-        if(t.k==='op'){staff.b=t.r;staff.state='goOp';staff.cyc=0;staff.wasRun=false;
-          routeTo(staff,t.r.pad.z,t.r.pad.op.x,t.r.pad.op.y);}
-        else{staff.b=t.b;staff.state='go';
-          routeTo(staff,t.z,t.tp.x,t.tp.y);}
+        staff.b=t.b;staff.state='go';
+        routeTo(staff,t.z,t.tp.x,t.tp.y);
       }else if(dist(staff.x,staff.y,staffPost.x,staffPost.y)>3&&staff.route.length===0){
         routeTo(staff,null,staffPost.x+rnd(-.4,.4),staffPost.y-0.6);
       }
     }
     if(staff.route.length||dist(staff.x,staff.y,staff.tx,staff.ty)>.14)guestStep(staff,dt);
-  }else if(staff.state==='goOp'){
-    if(guestStep(staff,dt))staff.state='operate';
-  }else if(staff.state==='operate'){
-    const r=staff.b;
-    staff.head=Math.atan2(r.cx-staff.x,r.cy-staff.y);
-    if(r.state==='run')staff.wasRun=true;
-    if(r.state==='idle'){
-      if(staff.wasRun){staff.wasRun=false;staff.cyc=(staff.cyc||0)+1;}
-      if(r.queue.length===0||staff.cyc>=1||r.tray.c>=40){
-        staff.cyc=0;
-        if(r.tray.c>=30){staff.state='go';
-          routeTo(staff,r.pad.z,r.pad.tray.x,r.pad.tray.y);}
-        else{staff.state='idle';staff.idleT=.2;}
-      }
-    }
   }else if(staff.state==='go'){
     if(guestStep(staff,dt))staff.state='collect';
   }else if(staff.state==='collect'){
@@ -1009,13 +983,13 @@ function addXP(a){
 /* ---------- Tutorial ---------- */
 const TUT_TXT=[
   'Walk to the <b>NEW LAND sign</b> & stand still — buy your first ride!',
-  'Guests are queuing! Stand at the <b>❗ lever</b> to run the ride',
+  'Guests board & ride <b>automatically</b> — the rest wait in line!',
   'Collect 💵 at the <b>💰 CASHIER booth</b> in front of the ride',
   'Stand on the <b>⬆ pad</b> beside the cashier to upgrade the ride',
-  'Save up & buy the <b>next land</b> — hire an operator to automate ➜',
+  'Save up & buy the <b>next land</b> — hire a collector to automate ➜',
 ];
 function tutTarget(){
-  if(S.tut===1){const r=rides[0];return r?r.pad.op:null;}
+  if(S.tut===1){const r=rides[0];return r?r.pad.qp:null;}
   if(S.tut===2){const r=rides.find(r=>r.tray.c>0);return r?r.pad.tray:null;}
   if(S.tut===3){const r=rides[0];return r?r.pad.up:null;}
   const z=ZONES.find(z=>!z.unlocked&&reqOk(z));
@@ -2080,19 +2054,8 @@ function makePadVis(p){
   uarrow.position.set(.32,.5,0);ug.add(uarrow);
   const ustatus=makeStatus(1.2);ustatus.sp.position.y=1.55;ustatus.sp.visible=false;ug.add(ustatus.sp);
   const ulabel=makeLabel(.48);ulabel.sp.position.y=.98;ug.add(ulabel.sp);
-  const og=new THREE.Group();og.position.set(p.op.x,0,p.op.y);
-  og.add(M(GEO.box,mat('#8b93a8'),.44,.5,.34,0,.25,0,true,true));
-  og.add(M(GEO.box,mat('#6f7789'),.5,.08,.4,0,.53,0));
-  const lever=M(GEO.cyl,mat('#3c4557'),.05,.42,.05,-.08,.72,0);
-  lever.rotation.z=.5;og.add(lever);
-  og.add(M(GEO.sph,mat('#e0536a',{roughness:.4}),.11,.11,.11,-.19,.86,0,false));
-  og.add(M(GEO.cyl,mat('#e0536a',{roughness:.4}),.14,.05,.14,.12,.58,0,false));
-  const oprompt=emojiSprite('❗',.6);oprompt.position.y=1.35;og.add(oprompt);
-  const oplabel=makeLabel(.44);oplabel.set('RUN RIDE',{bg:'#3f8fe0',fg:'#fff',fs:38});
-  oplabel.sp.position.y=1.85;og.add(oplabel.sp);
-  scene.add(og);
   scene.add(grp);scene.add(ug);
-  return {p,grp,ug,bracket,ustatus,ulabel,og,oprompt,oplabel};
+  return {p,grp,ug,bracket,ustatus,ulabel};
 }
 function visAddGuest(g){
   const v=makePerson({col:g.col,skin:g.skin,hat:g.hat,scale:.92});
@@ -2303,7 +2266,7 @@ function visSync(dt){
     if(!staff){
       const rem=Math.ceil(staffPost.pay.need-staffPost.pay.done);
       staffDeskStatus.set('🧑‍💼',staffPost.pay.done/staffPost.pay.need,
-        '$'+fmt(rem),'HIRE CASHIER');
+        '$'+fmt(rem),'HIRE COLLECTOR');
       staffDeskStatus.sp.position.y=1.7+Math.sin(S.t*2.4)*.05;
     }
   }
@@ -2358,11 +2321,6 @@ function visSync(dt){
     pd.grp.visible=unlocked;
     if(!unlocked){pd.ug.visible=false;continue;}
     const r=p.built;
-    const needOp=!!r&&r.state==='idle'&&r.queue.length>0&&!rideOperated(r);
-    pd.og.visible=!!r;
-    pd.oprompt.visible=needOp;
-    pd.oplabel.sp.visible=needOp;
-    if(needOp)pd.oprompt.position.y=1.35+Math.sin(S.t*6)*.12;
     pd.ug.visible=!!r&&r.lvl<5;
     if(pd.ug.visible){
       const bp=1+Math.sin(S.t*4)*.06;

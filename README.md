@@ -18,9 +18,10 @@ An internet connection is required (Three.js r128 and the "Baloo 2" font load fr
 
 - **Move** — WASD / arrow keys, or drag the virtual joystick on mobile
 - **Buy land** — stand at a NEW LAND sign to pay automatically
-- **Run a ride** — stand at the ❗ lever (or hire the $750 operator at the plaza desk)
-- **Collect** — walk up to the 💰 cashier booth at the front of each ride (and the ticket booth)
+- **Rides run automatically** — max riders board each cycle, the rest wait in line and swap in when the cycle ends
+- **Collect** — walk up to the 💰 cashier booth in front of each ride's fence (and the ticket booth)
 - **Upgrade** — stand on the ⬆ pad beside the cashier
+- **Automate** — hire the $750 collector at the plaza desk to gather money for you
 
 ## Status
 
