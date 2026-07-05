@@ -223,7 +223,7 @@
   <div class="ctl">WASD / joystick to move · stand on pads to build & upgrade<br>walk near money to collect it</div>
 </div>
 
-<div id="verTag">PARKTOPIA v1.4 HD — prototype</div>
+<div id="verTag">PARKTOPIA v1.5 HD — prototype</div>
 <script>
 /* ================================================================
    PARKTOPIA HD v0.4 — 12 plots, 1 land = 1 ride (Three.js)
@@ -1516,24 +1516,24 @@ function syncPoster(r){
   c.fillText(txt,64,131);
   r.poster.tex.needsUpdate=true;
 }
-/* Front cashier booth: sits at the plot entrance; ride money piles up here */
+/* Front cashier booth: open counter so the attendant stays visible from the game camera;
+   parasol is offset to the side instead of a roof over the person */
 const kasirBobs=[];
 function buildKasir(pad){
   const g=new THREE.Group();
-  g.add(M(GEO.box,mat('#8f7bff'),1.05,.72,.62,0,.36,0,true,true));
-  g.add(M(GEO.box,mat('#6b5ce0'),1.14,.10,.70,0,.76,0));
-  g.add(M(GEO.box,mat('#eaf2ff',{roughness:.2}),.72,.26,.06,0,.52,.29,false));
-  g.add(M(GEO.box,mat('#ffd23f'),.92,.07,.34,0,.80,.30,false));
-  for(const sx of [-.48,.48])g.add(M(GEO.box,mat('#6b5ce0'),.08,.70,.08,sx,1.10,.22,false));
-  for(let i=0;i<4;i++){
-    const aw=M(GEO.box,mat(i%2?'#ffffff':'#e05252'),.29,.05,.55,-.44+i*.29,1.50,.10);
-    aw.rotation.x=.5;g.add(aw);
-  }
-  const p=makePerson({col:'#ffd23f',skin:pick(SKINS),hat:false,scale:.9});
-  p.g.position.set(0,.10,-.08);
+  g.add(M(GEO.box,mat('#8f7bff'),1.05,.62,.5,0,.31,.24,true,true));
+  g.add(M(GEO.box,mat('#6b5ce0'),1.14,.10,.58,0,.66,.24));
+  g.add(M(GEO.box,mat('#eaf2ff',{roughness:.2}),.7,.22,.05,0,.44,.50,false));
+  g.add(M(GEO.box,mat('#3c4557'),.24,.16,.20,-.30,.79,.24,false));
+  g.add(M(GEO.box,mat('#ffd23f'),.20,.04,.14,.26,.73,.24,false));
+  g.add(M(GEO.cyl,mat('#8a5a2b'),.05,1.6,.05,.92,.8,.20,false));
+  const um=new THREE.Mesh(new THREE.ConeGeometry(.55,.3,8),mat('#e05252',{flatShading:true}));
+  um.position.set(.92,1.68,.20);um.castShadow=true;g.add(um);
+  const p=makePerson({col:'#ffd23f',skin:pick(SKINS),hat:true,scale:1.05});
+  p.g.position.set(-.10,0,-.38);
   g.add(p.g);
   const tag=makeLabel(.5);tag.set('💰 CASHIER',{bg:'#6b5ce0',fg:'#ffffff',fs:38});
-  tag.sp.position.y=2.05;g.add(tag.sp);
+  tag.sp.position.y=2.15;g.add(tag.sp);
   g.position.set(pad.kasir.x,0,pad.kasir.y);
   g.rotation.y=Math.atan2(pad.tray.x-pad.kasir.x,pad.tray.y-pad.kasir.y);
   g.traverse(o=>{if(o.isMesh&&o.castShadow!==false)o.castShadow=true;});
