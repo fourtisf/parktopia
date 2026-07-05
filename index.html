@@ -223,7 +223,7 @@
   <div class="ctl">WASD / joystick to move · stand on pads to build & upgrade<br>walk near money to collect it</div>
 </div>
 
-<div id="verTag">PARKTOPIA v1.3 HD — prototype</div>
+<div id="verTag">PARKTOPIA v1.4 HD — prototype</div>
 <script>
 /* ================================================================
    PARKTOPIA HD v0.4 — 12 plots, 1 land = 1 ride (Three.js)
@@ -554,7 +554,7 @@ function spawnInterval(){
   return clamp(3.4/((1+0.20*(built-1))*(1+0.3*S.mkt)),0.6,4);
 }
 function spawnGuest(){
-  if(guests.length>=60)return;
+  if(guests.length>=300)return; /* not a gameplay cap — device safety only; population self-balances far below this */
   const g={
     x:23.7+rnd(-0.6,0.6),y:42.6,tx:22.3,ty:36.2,
     state:'enter',speed:2.0+rnd(0.7),
