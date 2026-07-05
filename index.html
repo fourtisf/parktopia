@@ -223,7 +223,7 @@
   <div class="ctl">WASD / joystick to move · stand on pads to build & upgrade<br>walk near money to collect it</div>
 </div>
 
-<div id="verTag">PARKTOPIA v1.8 HD — prototype</div>
+<div id="verTag">PARKTOPIA v1.9 HD — prototype</div>
 <script>
 /* ================================================================
    PARKTOPIA HD v0.4 — 12 plots, 1 land = 1 ride (Three.js)
@@ -396,16 +396,16 @@ const pads=ZONES.map((z,i)=>{
   const qd=Math.min(3.6,z.w/2-0.6);
   const edgeX=dir.x>0?z.x+z.w:z.x;              /* front fence line (street side) */
   const gap=Math.abs(z.gate.x-edgeX);
-  /* toll-booth style: centered in the approach corridor, right in front of the fence gate,
-     window overlooking the entrance path */
-  const kasir={x:edgeX+dir.x*clamp(gap*0.5,0.6,1.6),y:cy+1.3};
+  /* toll-booth style: centered in the approach corridor right in front of the fence gate,
+     on the far side of the entrance path so the counter & attendant FACE the camera */
+  const kasir={x:edgeX+dir.x*clamp(gap*0.5,0.6,1.6),y:cy-1.3};
   const pad={id:i,zone:i,z,type:z.type,cost:z.cost,tCost:z.tCost,cx,cy,dir,built:null,
     qp:cl({x:cx+dir.x*qd,y:cy}),
     exit:cl({x:cx,y:cy-eh}),
     kasir,
-    up:cl({x:edgeX-dir.x*1.55,y:cy+1.7}),
+    up:cl({x:edgeX-dir.x*1.9,y:cy-1.7}),
     op:cl({x:cx+dir.x*qd,y:cy-Math.min(1.6,eh)}),
-    tray:{x:kasir.x,y:cy+0.65}};
+    tray:{x:kasir.x,y:cy-0.65}};
   z.pad=pad;
   const ex0=Math.min(z.gate.x,dir.x>0?z.x+z.w-0.2:z.x+0.2)-0.35;
   const ex1=Math.max(z.gate.x,dir.x>0?z.x+z.w-0.2:z.x+0.2)+0.35;
@@ -1494,7 +1494,7 @@ function buildAirBalloon(x,y){
 function buildPoster(r){
   const p=r.pad,z=p.z;
   const px=p.qp.x+p.dir.x*0.4;
-  const py=clamp(p.qp.y-1.35,z.y+0.7,z.y+z.h-0.7);
+  const py=clamp(p.qp.y+1.35,z.y+0.7,z.y+z.h-0.7);
   const g=new THREE.Group();g.position.set(px,0,py);
   /* face south: the camera always looks at the park from the south */
   g.add(M(GEO.box,mat('#6b5ce0'),.13,.9,.13,0,.45,0));
