@@ -4,11 +4,30 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>PARKTOPIA HD — Theme Park Tycoon</title>
+<meta name="description" content="Build your theme-park empire in the browser. Buy land, open rides, collect the cash, upgrade and automate. 12 attractions from Carousel to Roller Coaster. Play free.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%8E%A1</text></svg>">
 <link rel="apple-touch-icon" href="logo.png">
+<!-- Open Graph / Twitter card: rich preview when shared on X / Telegram / Discord -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="PARKTOPIA HD">
+<meta property="og:title" content="PARKTOPIA HD — Theme Park Tycoon">
+<meta property="og:description" content="Build your theme-park empire in the browser. One plot → twelve rides → your empire. Play free.">
+<meta property="og:url" content="https://parktopia.fun/">
+<meta property="og:image" content="https://parktopia.fun/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@Parktopiafun">
+<meta name="twitter:title" content="PARKTOPIA HD — Theme Park Tycoon">
+<meta name="twitter:description" content="Build your theme-park empire in the browser. One plot → twelve rides → your empire. Play free.">
+<meta name="twitter:image" content="https://parktopia.fun/og.png">
+<meta name="theme-color" content="#1a1740">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<!-- Three.js with automatic CDN fallback (cdnjs -> jsDelivr -> unpkg) so a single CDN outage can't break the game -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>window.THREE||document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"><\/script>');</script>
+<script>window.THREE||document.write('<script src="https://unpkg.com/three@0.128.0/build/three.min.js"><\/script>');</script>
 <style>
   :root{
     --purple:#7C5CFF; --purple-d:#5a3fd6; --ink:#1b1733;
@@ -202,6 +221,22 @@
   #caPill{background:rgba(22,19,45,.88);border:2px solid var(--gold);color:var(--gold);
     font-weight:800;font-size:15px;letter-spacing:2.5px;padding:9px 28px;border-radius:20px;
     box-shadow:0 0 20px rgba(255,210,63,.28);}
+  #landingLeader{margin-top:2px;background:rgba(22,19,45,.85);border:2px solid rgba(255,255,255,.2);color:#fff;
+    font-family:inherit;font-weight:800;font-size:14px;letter-spacing:.6px;padding:8px 22px;border-radius:18px;
+    cursor:pointer;pointer-events:auto;box-shadow:0 4px 12px rgba(0,0,0,.35);transition:transform .12s;}
+  #landingLeader:active{transform:scale(.95);}
+  /* leaderboard modal rows */
+  #leaderModal{z-index:200;}
+  #leaderRows{display:flex;flex-direction:column;gap:6px;max-height:52vh;overflow-y:auto;margin:8px 0;}
+  .ldRow{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);border-radius:12px;
+    padding:9px 12px;font-weight:700;font-size:15px;}
+  .ldRow.me{background:rgba(255,210,63,.16);border:1px solid var(--gold);}
+  .ldRank{width:32px;text-align:center;font-size:16px;font-weight:800;flex:0 0 auto;}
+  .ldName{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ldName .ldW{opacity:.85;font-size:12px;}
+  .ldScore{color:var(--gold);font-weight:800;white-space:nowrap;}
+  .ldLoad{text-align:center;opacity:.7;padding:20px;font-weight:700;}
+  #leaderShare{width:100%;margin-top:4px;}
   #landingCrypto{margin-top:6px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;}
   #landingWallet{background:linear-gradient(180deg,#7C5CFF,#5a3fd6);border:2px solid rgba(255,255,255,.22);
     color:#fff;font-family:inherit;font-weight:800;font-size:15px;letter-spacing:.6px;padding:10px 26px;
@@ -292,6 +327,7 @@
   </div>
 
   <div id="bottomRight">
+    <button class="roundBtn clickable" id="leaderBtn">🏆</button>
     <button class="roundBtn clickable" id="setBtn">⚙️</button>
     <button class="roundBtn clickable" id="muteBtn">🔊</button>
   </div>
@@ -357,6 +393,15 @@
   </div>
 </div>
 
+<div class="modalBg" id="leaderModal">
+  <div class="modal">
+    <h2>🏆 Leaderboard <button id="closeLeader">✕</button></h2>
+    <p class="tip">Top parks by total value. Build, upgrade &amp; automate to climb the ranks. 👛 = wallet connected.</p>
+    <div id="leaderRows"></div>
+    <button class="act" id="leaderShare">📢 Share my park on X</button>
+  </div>
+</div>
+
 <div id="joyBase"></div><div id="joyKnob"></div>
 
 <div id="startOv">
@@ -371,6 +416,7 @@
     <div class="statBox"><b id="statTotal">—</b><span class="lbl">TOTAL PLAYERS</span></div>
     <div class="statBox"><b><span class="dot"></span><span id="statOnline">—</span></b><span class="lbl">ONLINE NOW</span></div>
   </div>
+  <button id="landingLeader">🏆 Leaderboard</button>
   <div class="play">▶ &nbsp;TAP TO PLAY</div>
   <div id="landingCrypto">
     <button id="landingWallet">🔗 Connect Wallet</button>
@@ -719,7 +765,7 @@ function gloveMul(){return 1+0.2*S.glove;}
 function angDiff(a,b){let d=(a-b)%(Math.PI*2);if(d>Math.PI)d-=Math.PI*2;if(d<-Math.PI)d+=Math.PI*2;return d;}
 function coasterH(th){return 8+30*Math.exp(-Math.pow(angDiff(th,1.9)/0.55,2))+14*Math.exp(-Math.pow(angDiff(th,4.5)/0.8,2));}
 
-function buildRide(pad){
+function buildRide(pad,silent){
   const type=pad.type;
   const r={
     type,pad,lvl:1,baseCost:pad.cost,state:'idle',t:0,anim:0,spin:rnd(6.28),u:rnd(6.28),
@@ -729,11 +775,13 @@ function buildRide(pad){
   pad.built=r;
   rides.push(r);
   S.ridesBuilt++;
-  snd.build();
-  floatTxt(pad.cx,pad.cy,'OPEN!','#ffd23f',1.2);
-  puff(pad.cx,pad.cy,16);
+  if(!silent){
+    snd.build();
+    floatTxt(pad.cx,pad.cy,'OPEN!','#ffd23f',1.2);
+    puff(pad.cx,pad.cy,16);
+  }
   if(VIS)visAddRide(r);
-  if(S.tut===0)S.tut=1;
+  if(!silent&&S.tut===0)S.tut=1;
   return r;
 }
 
@@ -2775,9 +2823,13 @@ $('shopBtn').onclick=()=>{renderShop();$('shopModal').classList.add('open');snd.
 $('closeShop').onclick=()=>{$('shopModal').classList.remove('open');snd.click();};
 $('helpBtn').onclick=()=>{$('helpModal').classList.add('open');snd.click();};
 $('closeHelp').onclick=()=>{$('helpModal').classList.remove('open');snd.click();};
-['shopModal','helpModal','settingsModal'].forEach(id=>{
+['shopModal','helpModal','settingsModal','leaderModal'].forEach(id=>{
   $(id).addEventListener('click',e=>{if(e.target===$(id))$(id).classList.remove('open');});
 });
+$('leaderBtn').onclick=()=>{openLeaderboard();snd.click();};
+$('closeLeader').onclick=()=>{$('leaderModal').classList.remove('open');snd.click();};
+$('leaderShare').onclick=shareToX;
+$('landingLeader').addEventListener('click',e=>{e.stopPropagation();openLeaderboard();});
 $('muteBtn').onclick=()=>{applySfxOn(!SET.sfxOn);if(SET.sfxOn)snd.click();};
 $('startOv').addEventListener('click',()=>{
   if(S.started)return;
@@ -2786,6 +2838,12 @@ $('startOv').addEventListener('click',()=>{
   const a=ac();if(a&&a.state==='suspended')a.resume();
   if(SET.musicOn)music.start();
   snd.click();last=performance.now();
+  fetch('/api/play',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:PID})}).catch(()=>{});
+  setTimeout(()=>{                                  // welcome-back + daily bonus, once we're in
+    if(pendingWelcome){toast('🎡 Welcome back! Your park earned 💵 '+fmt(pendingWelcome.earn)+' while you were away.','gold');pendingWelcome=null;}
+    const dg=dailyReward();if(dg>0)toast('🎁 Daily bonus: +'+dg+' 💎 gems!','gold');
+    submitScore();saveGame();
+  },1000);
 });
 
 /* ---------- Settings: audio, player profile (name + id), wallet ---------- */
@@ -2982,6 +3040,96 @@ const introReel=(function(){
   setInterval(ping,25000);
 })();
 
+/* ================= Progress: save / load / offline / daily / leaderboard / share ================= */
+const SAVE_KEY='pk_save', SAVE_VER=1;
+function parkValue(){
+  let v=Math.max(0,S.cash);
+  for(const r of rides)v+=r.baseCost*incMul(r);        // each ride is worth more as it levels
+  v+=S.gems*120+(S.level-1)*400;
+  return Math.round(v);
+}
+function idleRatePerSec(){                              // theoretical passive income of the park
+  let rate=0;
+  for(const r of rides){const d=DEFS[r.type];rate+=(d.inc*incMul(r)*capOf(r))/Math.max(1.5,d.dur);}
+  return rate;
+}
+function serialize(){
+  const zones=[];
+  for(const z of ZONES)if(z.unlocked)zones.push({i:z.i,lvl:(z.pad&&z.pad.built?z.pad.built.lvl:1)});
+  return {v:SAVE_VER,t:Date.now(),
+    S:{cash:S.cash,gems:S.gems,tickets:S.tickets,level:S.level,xp:S.xp,xpNeed:S.xpNeed,
+       shoes:S.shoes,magnet:S.magnet,mkt:S.mkt,glove:S.glove,served:S.served,tut:S.tut},
+    zones,staff:!!staff,booth:booth.lvl};
+}
+function saveGame(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(serialize()));}catch(e){}}
+let pendingWelcome=null;
+function loadGame(){                                    // fully defensive: any problem -> fresh game
+  let raw;try{raw=localStorage.getItem(SAVE_KEY);}catch(e){return;}
+  if(!raw)return;
+  let d;try{d=JSON.parse(raw);}catch(e){try{localStorage.removeItem(SAVE_KEY);}catch(_){}return;}
+  if(!d||d.v!==SAVE_VER||!d.S)return;
+  try{
+    const ss=d.S;
+    for(const k of ['cash','gems','tickets','level','xp','xpNeed','shoes','magnet','mkt','glove','served','tut'])
+      if(typeof ss[k]==='number'&&isFinite(ss[k]))S[k]=ss[k];
+    S.ridesBuilt=0;
+    if(Array.isArray(d.zones))for(const zz of d.zones){
+      const z=ZONES[zz.i];if(!z||z.unlocked)continue;
+      z.unlocked=true;
+      const r=buildRide(z.pad,true);                    // silent rebuild (no fx/sound/tut)
+      if(r)r.lvl=Math.max(1,Math.min(5,(zz.lvl|0)||1)); // render loop scales it next frame
+    }
+    if(typeof d.booth==='number')booth.lvl=d.booth;
+    if(d.staff&&!staff){try{hireStaff();}catch(e){}}
+    if(typeof d.t==='number'){                          // offline / idle earnings
+      const secs=Math.max(0,(Date.now()-d.t)/1000);
+      if(secs>60&&rides.length){
+        const earn=Math.floor(idleRatePerSec()*0.18*Math.min(secs,6*3600)); // 18% rate, capped 6h
+        if(earn>0){S.cash+=earn;pendingWelcome={earn:earn,secs:secs};}
+      }
+    }
+  }catch(e){try{localStorage.removeItem(SAVE_KEY);}catch(_){}}
+}
+function dailyReward(){
+  let last;try{last=localStorage.getItem('pk_daily');}catch(e){}
+  const today=new Date().toISOString().slice(0,10);
+  if(last===today)return 0;
+  try{localStorage.setItem('pk_daily',today);}catch(e){}
+  S.gems+=3;return 3;
+}
+function esc(s){return String(s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));}
+function submitScore(){
+  fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({id:PID,name:playerName||undefined,score:parkValue(),wallet:(wallet&&wallet.addr)||undefined})}).catch(()=>{});
+}
+function openLeaderboard(){
+  const modal=$('leaderModal'),rows=$('leaderRows');
+  rows.innerHTML='<div class="ldLoad">Loading…</div>';
+  modal.classList.add('open');
+  fetch('/api/leaderboard?limit=25').then(r=>r.json()).then(d=>{
+    const top=(d&&d.top)||[];
+    if(!top.length){rows.innerHTML='<div class="ldLoad">No scores yet — be the first! 🏆</div>';return;}
+    rows.innerHTML=top.map((e,i)=>{
+      const me=(playerName&&e.name===playerName)?' me':'';
+      const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'.';
+      return '<div class="ldRow'+me+'"><span class="ldRank">'+medal+'</span>'
+        +'<span class="ldName">'+esc(e.name)+(e.wallet?' <span class="ldW">👛</span>':'')+'</span>'
+        +'<span class="ldScore">$'+fmt(e.score)+'</span></div>';
+    }).join('');
+  }).catch(()=>{rows.innerHTML='<div class="ldLoad">Leaderboard unavailable right now.</div>';});
+}
+function shareToX(){
+  const text='I just built a $'+fmt(parkValue())+' theme-park empire in PARKTOPIA 🎡\nBuild yours free 👇';
+  const url='https://twitter.com/intent/tweet?text='+encodeURIComponent(text)
+    +'&url='+encodeURIComponent('https://parktopia.fun')+'&via=Parktopiafun';
+  window.open(url,'_blank','noopener');
+}
+/* auto-save + periodic score submit while playing */
+setInterval(()=>{if(S.started)saveGame();},4000);
+setInterval(()=>{if(S.started)submitScore();},20000);
+window.addEventListener('visibilitychange',()=>{if(document.hidden&&S.started)saveGame();});
+window.addEventListener('pagehide',()=>{if(S.started)saveGame();});
+
 /* ---------- Main loop ---------- */
 let last=performance.now();
 function loop(now){
@@ -3004,8 +3152,9 @@ if(VIS){
   try{initThree();}
   catch(e){fatal('initThree failed:\n'+(e&&e.stack||e));}
 }else{
-  fatal('Three.js gagal load dari CDN (cdnjs.cloudflare.com).\nCek koneksi internet lalu reload halaman ini.');
+  fatal('Three.js gagal load dari CDN.\nCek koneksi internet lalu reload halaman ini.');
 }
+try{loadGame();displayCash=S.cash;}catch(e){}   // restore saved progress (never bricks the game)
 requestAnimationFrame(loop);
 </script>
 </body>
