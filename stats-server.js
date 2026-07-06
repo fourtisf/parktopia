@@ -10,8 +10,22 @@ const FILE = path.join(__dirname, 'stats-data.json');
 const PORT = 3001;
 const ONLINE_WINDOW_MS = 70e3;
 
-let data = { total: 0, ids: {} };
-try { data = JSON.parse(fs.readFileSync(FILE, 'utf8')); } catch (e) { /* fresh start */ }
+let data = { total: 0, ids: {}, names: {}, players: {} };
+try {
+  Object.assign(data, JSON.parse(fs.readFileSync(FILE, 'utf8')));
+  data.ids = data.ids || {};
+  data.names = data.names || {};      // lowercased name -> owner id
+  data.players = data.players || {};  // id -> { name, key }
+} catch (e) { /* fresh start */ }
+
+const ID_RE = /^[\w-]{6,64}$/;
+const NAME_RE = /^[\w \-]{2,16}$/;    // letters, digits, space, hyphen, underscore
+
+function readBody(req, res, cb) {
+  let body = '';
+  req.on('data', c => { body += c; if (body.length > 400) req.destroy(); });
+  req.on('end', () => { let j = {}; try { j = JSON.parse(body); } catch (e) {} cb(j); });
+}
 
 let dirty = false;
 setInterval(() => {
@@ -37,16 +51,31 @@ const server = http.createServer((req, res) => {
   const url = req.url.split('?')[0];
 
   if (url === '/api/hello' && req.method === 'POST') {
-    let body = '';
-    req.on('data', c => { body += c; if (body.length > 300) req.destroy(); });
-    req.on('end', () => {
-      let id = '';
-      try { id = String(JSON.parse(body).id || '').slice(0, 64); } catch (e) {}
-      if (/^[\w-]{6,64}$/.test(id)) {
+    readBody(req, res, j => {
+      const id = String(j.id || '').slice(0, 64);
+      let name = null;
+      if (ID_RE.test(id)) {
         if (!data.ids[id]) { data.ids[id] = 1; data.total++; dirty = true; }
         online[id] = Date.now();
+        name = (data.players[id] || {}).name || null;
       }
-      res.end(JSON.stringify({ total: data.total, online: Math.max(1, onlineCount()) }));
+      res.end(JSON.stringify({ total: data.total, online: Math.max(1, onlineCount()), name: name }));
+    });
+  } else if (url === '/api/name' && req.method === 'POST') {
+    readBody(req, res, j => {
+      const id = String(j.id || '').slice(0, 64);
+      const name = String(j.name == null ? '' : j.name).trim().slice(0, 16);
+      if (!ID_RE.test(id)) { res.statusCode = 400; res.end(JSON.stringify({ ok: false, error: 'bad_id' })); return; }
+      if (!NAME_RE.test(name)) { res.end(JSON.stringify({ ok: false, error: 'bad_name' })); return; }
+      const key = name.toLowerCase();
+      const owner = data.names[key];
+      if (owner && owner !== id) { res.end(JSON.stringify({ ok: false, error: 'taken' })); return; }
+      const prev = data.players[id];
+      if (prev && prev.key && prev.key !== key) delete data.names[prev.key]; // release old name
+      data.names[key] = id;
+      data.players[id] = { name: name, key: key };
+      dirty = true;
+      res.end(JSON.stringify({ ok: true, name: name }));
     });
   } else if (url === '/api/stats') {
     res.end(JSON.stringify({ total: data.total, online: onlineCount() }));

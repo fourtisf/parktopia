@@ -152,6 +152,40 @@
   #logoImg{width:min(680px,90vw);margin:-18px 0 -26px;
     filter:drop-shadow(0 12px 30px rgba(0,0,0,.5));pointer-events:none;}
   #startOv .sub{font-weight:800;color:var(--gold);font-size:17px;letter-spacing:2px;text-shadow:0 2px 10px rgba(0,0,0,.7);}
+
+  /* ---- 3D intro banner reel — slats flip up on the X axis (split-flap drum) ---- */
+  #introReel{position:relative;width:min(560px,92vw);height:98px;margin:6px 0 4px;
+    perspective:1150px;pointer-events:none;
+    -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 24%,#000 76%,transparent 100%);
+            mask-image:linear-gradient(180deg,transparent 0,#000 24%,#000 76%,transparent 100%);}
+  #introReel .drum{position:absolute;inset:0;transform-style:preserve-3d;will-change:transform;
+    transition:transform .95s cubic-bezier(.16,1,.3,1);}
+  #introReel .slat{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:16px;
+    padding:0 22px;border-radius:20px;
+    backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    background:linear-gradient(180deg,rgba(30,25,62,.94),rgba(16,12,36,.94));
+    border:2px solid var(--ac,rgba(255,255,255,.18));
+    box-shadow:0 12px 28px rgba(0,0,0,.45),0 0 22px -6px var(--ac,transparent),
+      inset 0 1px 0 rgba(255,255,255,.12),inset 0 0 34px rgba(0,0,0,.4);}
+  #introReel .em{font-size:42px;line-height:1;flex:0 0 auto;
+    filter:drop-shadow(0 3px 6px rgba(0,0,0,.55));}
+  #introReel .tx{text-align:left;min-width:0;max-width:100%;overflow:hidden;}
+  #introReel .hl{display:block;font-weight:800;font-size:24px;letter-spacing:.4px;line-height:1.04;
+    color:var(--ac,var(--gold));text-shadow:0 2px 9px rgba(0,0,0,.6);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  #introReel .sc{display:block;margin-top:3px;font-weight:700;font-size:12.5px;letter-spacing:.2px;
+    color:#e7ecff;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  @media (max-width:480px){
+    #introReel{height:82px;}
+    #introReel .slat{gap:12px;padding:0 16px;}
+    #introReel .em{font-size:32px;}
+    #introReel .hl{font-size:18px;}
+    #introReel .sc{font-size:11px;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    #introReel .drum{transition:opacity .5s ease;}
+  }
+
   #stats{display:flex;gap:14px;margin-top:2px;}
   .statBox{background:rgba(22,19,45,.85);border:2px solid rgba(255,255,255,.16);border-radius:18px;
     padding:10px 28px;text-align:center;color:#fff;backdrop-filter:blur(6px);
@@ -170,6 +204,54 @@
     box-shadow:0 0 20px rgba(255,210,63,.28);}
   #startOv .ctl{color:#e6ecff;font-size:13px;font-weight:700;opacity:.85;margin-top:6px;text-align:center;
     line-height:1.6;text-shadow:0 1px 6px rgba(0,0,0,.8);}
+
+  /* ---- settings: gear buttons + modal internals ---- */
+  #landingGear{position:absolute;top:14px;right:14px;z-index:6;width:46px;height:46px;border-radius:14px;
+    background:rgba(22,19,45,.82);border:2px solid rgba(255,255,255,.18);color:#fff;font-size:22px;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(6px);
+    box-shadow:0 4px 12px rgba(0,0,0,.35);transition:transform .12s;}
+  #landingGear:active{transform:scale(.9) rotate(30deg);}
+  #settingsModal{z-index:200;}
+  .setSection{margin-bottom:15px;padding-bottom:13px;border-bottom:1px solid rgba(255,255,255,.09);}
+  .setSection:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+  .setSection h3{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);
+    opacity:.92;margin-bottom:10px;font-weight:800;}
+  .setRow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:9px 0;
+    font-weight:700;font-size:15px;}
+  .nameRow{display:flex;gap:8px;}
+  #settingsModal input[type=text]{flex:1;background:rgba(255,255,255,.08);
+    border:2px solid rgba(255,255,255,.16);border-radius:12px;color:#fff;font-family:inherit;
+    font-weight:700;font-size:15px;padding:9px 12px;outline:none;min-width:0;}
+  #settingsModal input[type=text]:focus{border-color:var(--purple);}
+  #settingsModal button.act{background:var(--purple);border:none;color:#fff;font-family:inherit;
+    font-weight:800;font-size:14px;padding:9px 16px;border-radius:12px;cursor:pointer;
+    box-shadow:0 3px 0 var(--purple-d);white-space:nowrap;}
+  #settingsModal button.act:active{transform:translateY(2px);box-shadow:none;}
+  #walletBtn{width:100%;background:linear-gradient(180deg,#ffd23f,#f4b400);color:#5c3a00;border:none;
+    font-family:inherit;font-weight:800;font-size:15px;padding:12px;border-radius:14px;cursor:pointer;
+    box-shadow:0 3px 0 #c99a12;}
+  #walletBtn:active{transform:translateY(2px);box-shadow:none;}
+  #walletBtn.connected{background:linear-gradient(180deg,#5fd068,#3fae4c);color:#08350f;box-shadow:0 3px 0 #2e8b3a;}
+  .setMsg{font-size:12.5px;font-weight:700;margin-top:7px;min-height:15px;line-height:1.35;}
+  .setMsg.ok{color:var(--green);} .setMsg.err{color:#ff6b81;} .setMsg.info{color:var(--cyan);}
+  .idRow{display:flex;align-items:center;gap:8px;margin-top:11px;font-size:12.5px;font-weight:700;opacity:.85;}
+  .idRow code{background:rgba(255,255,255,.1);padding:3px 8px;border-radius:8px;font-size:12px;font-family:monospace;
+    flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .idRow button{background:rgba(255,255,255,.12);border:none;color:#fff;font-family:inherit;
+    font-weight:700;font-size:11px;padding:5px 10px;border-radius:8px;cursor:pointer;}
+  .switch{position:relative;display:inline-block;width:46px;height:26px;flex:0 0 auto;cursor:pointer;}
+  .switch input{opacity:0;width:0;height:0;}
+  .switch .track{position:absolute;inset:0;background:rgba(255,255,255,.22);border-radius:20px;transition:.2s;}
+  .switch .track::before{content:'';position:absolute;height:20px;width:20px;left:3px;top:3px;
+    background:#fff;border-radius:50%;transition:.2s;box-shadow:0 2px 4px rgba(0,0,0,.4);}
+  .switch input:checked + .track{background:var(--green);}
+  .switch input:checked + .track::before{transform:translateX(20px);}
+  .slider{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:4px;
+    background:rgba(255,255,255,.18);outline:none;margin:2px 0 6px;}
+  .slider:disabled{opacity:.4;}
+  .slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;
+    border-radius:50%;background:var(--gold);cursor:pointer;box-shadow:0 2px 5px rgba(0,0,0,.4);}
+  .slider::-moz-range-thumb{width:18px;height:18px;border:none;border-radius:50%;background:var(--gold);cursor:pointer;}
 
   #verTag{position:fixed;bottom:6px;left:10px;z-index:11;color:rgba(255,255,255,.55);
     font-size:11px;font-weight:700;pointer-events:none;letter-spacing:.4px;}
@@ -196,6 +278,7 @@
   </div>
 
   <div id="bottomRight">
+    <button class="roundBtn clickable" id="setBtn">⚙️</button>
     <button class="roundBtn clickable" id="muteBtn">🔊</button>
   </div>
 
@@ -226,12 +309,47 @@
   </div>
 </div>
 
+<div class="modalBg" id="settingsModal">
+  <div class="modal">
+    <h2>⚙️ Settings <button id="closeSettings">✕</button></h2>
+
+    <div class="setSection">
+      <h3>👤 Player Profile</h3>
+      <div class="nameRow">
+        <input type="text" id="nameInput" maxlength="16" placeholder="Choose a display name" autocomplete="off" spellcheck="false">
+        <button class="act" id="nameSave">Save</button>
+      </div>
+      <div class="setMsg" id="nameMsg"></div>
+      <div class="idRow">🆔 <code id="pidView">—</code><button id="pidCopy">Copy</button></div>
+    </div>
+
+    <div class="setSection">
+      <h3>👛 Wallet</h3>
+      <button id="walletBtn">🔗 Connect Wallet</button>
+      <div class="setMsg" id="walletMsg"></div>
+    </div>
+
+    <div class="setSection">
+      <h3>🎧 Audio</h3>
+      <div class="setRow"><span>🎵 Music</span>
+        <label class="switch"><input type="checkbox" id="musicToggle"><span class="track"></span></label>
+      </div>
+      <input type="range" class="slider" id="musicVol" min="0" max="100" value="50" aria-label="Music volume">
+      <div class="setRow"><span>🔊 Sound FX</span>
+        <label class="switch"><input type="checkbox" id="sfxToggle"><span class="track"></span></label>
+      </div>
+      <input type="range" class="slider" id="sfxVol" min="0" max="100" value="100" aria-label="Sound FX volume">
+    </div>
+  </div>
+</div>
+
 <div id="joyBase"></div><div id="joyKnob"></div>
 
 <div id="startOv">
+  <button id="landingGear" aria-label="Settings">⚙️</button>
   <div class="logoFerris">🎡</div>
   <img id="logoImg" src="logo.png" alt="PARKTOPIA — Theme Park Tycoon">
-  <div class="sub">✦ HD · GIANT LANDS · FRONT CASHIERS ✦</div>
+  <div id="introReel" aria-hidden="true"><div class="drum" id="reelDrum"></div></div>
   <div id="stats">
     <div class="statBox"><b id="statTotal">—</b><span class="lbl">TOTAL PLAYERS</span></div>
     <div class="statBox"><b><span class="dot"></span><span id="statOnline">—</span></b><span class="lbl">ONLINE NOW</span></div>
@@ -286,8 +404,31 @@ function mulberry(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=M
 const easeOut=t=>1-Math.pow(1-t,2);
 
 /* ---------- Audio ---------- */
-let AC=null,muted=false,lastCoinSnd=0;
+let AC=null,muted=false,lastCoinSnd=0,sfxGain=null,musicGain=null;
+/* persisted settings (audio) */
+const SET=(function(){
+  const d={musicOn:true,musicVol:0.5,sfxOn:true,sfxVol:1};
+  try{Object.assign(d,JSON.parse(localStorage.getItem('pk_set')||'{}'));}catch(e){}
+  return d;
+})();
+muted=!SET.sfxOn;
+function saveSet(){try{localStorage.setItem('pk_set',JSON.stringify(SET));}catch(e){}}
+/* stable per-browser player id + saved name + wallet */
+const PID=(function(){
+  try{let p=localStorage.getItem('pk_pid');
+    if(!p){p='p'+Date.now().toString(36)+Math.random().toString(36).slice(2,10);localStorage.setItem('pk_pid',p);}
+    return p;}catch(e){return 'p'+Math.random().toString(36).slice(2,12);}
+})();
+let playerName='';try{playerName=localStorage.getItem('pk_name')||'';}catch(e){}
+let wallet=null;try{wallet=JSON.parse(localStorage.getItem('pk_wallet')||'null');}catch(e){}
+
 function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}return AC;}
+function sfxBus(){const a=ac();if(!a)return null;
+  if(!sfxGain){sfxGain=a.createGain();sfxGain.gain.value=SET.sfxVol;sfxGain.connect(a.destination);}
+  return sfxGain;}
+function musicBus(){const a=ac();if(!a)return null;
+  if(!musicGain){musicGain=a.createGain();musicGain.gain.value=SET.musicVol;musicGain.connect(a.destination);}
+  return musicGain;}
 function beep(f,d,type,v,slide){
   if(muted)return;const a=ac();if(!a)return;
   const o=a.createOscillator(),g=a.createGain();
@@ -295,7 +436,7 @@ function beep(f,d,type,v,slide){
   if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(40,f+slide),a.currentTime+d);
   g.gain.value=v||.12;
   g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+d);
-  o.connect(g);g.connect(a.destination);
+  o.connect(g);g.connect(sfxBus()||a.destination);
   o.start();o.stop(a.currentTime+d+.02);
 }
 const snd={
@@ -311,6 +452,48 @@ const snd={
   click(){beep(600,.05,'triangle',.08);},
   expand(){[392,494,587,784].forEach((f,i)=>setTimeout(()=>beep(f,.15,'triangle',.14),i*100));},
 };
+
+/* ---------- Background music: a light, looping theme-park waltz synthesised
+     with WebAudio (no audio files). Routed through its own gain bus so its
+     volume is independent of the SFX. Cheerful I–vi–IV–V arpeggios + bass. ---------- */
+const music=(function(){
+  const CH=[                                   // C – Am – F – G, 8 eighth-notes each
+    {notes:[523.25,659.25,783.99,1046.50], bass:130.81}, // C  major
+    {notes:[440.00,523.25,659.25,880.00],  bass:110.00}, // A  minor
+    {notes:[349.23,440.00,523.25,698.46],  bass:174.61}, // F  major
+    {notes:[391.99,493.88,587.33,783.99],  bass:196.00}, // G  major
+  ];
+  const ARP=[0,1,2,3,2,3,1,2];                 // gentle up/down arpeggio
+  const STEP=0.25;                             // eighth-note @ 120bpm
+  let playing=false,step=0,nextT=0,timer=null;
+  function voice(freq,t,dur,type,vol){
+    const a=ac(),bus=musicBus();if(!a||!bus)return;
+    const o=a.createOscillator(),g=a.createGain();
+    o.type=type;o.frequency.value=freq;
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(vol,t+0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g);g.connect(bus);
+    o.start(t);o.stop(t+dur+0.03);
+  }
+  function sched(){
+    const a=ac();if(!a||!playing)return;
+    while(nextT<a.currentTime+0.18){
+      const chord=CH[Math.floor(step/8)%CH.length],s=step%8;
+      voice(chord.notes[ARP[s]],nextT,STEP*0.9,'triangle',0.13);        // melody
+      if(s===0||s===4)voice(chord.bass,nextT,STEP*1.7,'sine',0.22);     // bass on the beat
+      if(s===2||s===6)voice(chord.bass*2,nextT,STEP*0.5,'triangle',0.05);// soft off-beat
+      nextT+=STEP;step++;
+    }
+  }
+  return {
+    start(){const a=ac();if(!a||playing)return;playing=true;nextT=a.currentTime+0.1;
+      timer=setInterval(sched,60);sched();},
+    stop(){playing=false;if(timer){clearInterval(timer);timer=null;}},
+    setVol(v){const bus=musicBus();if(bus)bus.gain.value=v;},
+    isPlaying(){return playing;},
+  };
+})();
 
 /* ---------- Game state ---------- */
 const S={
@@ -2572,33 +2755,172 @@ $('shopBtn').onclick=()=>{renderShop();$('shopModal').classList.add('open');snd.
 $('closeShop').onclick=()=>{$('shopModal').classList.remove('open');snd.click();};
 $('helpBtn').onclick=()=>{$('helpModal').classList.add('open');snd.click();};
 $('closeHelp').onclick=()=>{$('helpModal').classList.remove('open');snd.click();};
-['shopModal','helpModal'].forEach(id=>{
+['shopModal','helpModal','settingsModal'].forEach(id=>{
   $(id).addEventListener('click',e=>{if(e.target===$(id))$(id).classList.remove('open');});
 });
-$('muteBtn').onclick=()=>{muted=!muted;$('muteBtn').textContent=muted?'🔇':'🔊';snd.click();};
+$('muteBtn').onclick=()=>{applySfxOn(!SET.sfxOn);if(SET.sfxOn)snd.click();};
 $('startOv').addEventListener('click',()=>{
   if(S.started)return;
   S.started=true;$('startOv').style.display='none';
+  if(introReel)introReel.stop();
   const a=ac();if(a&&a.state==='suspended')a.resume();
+  if(SET.musicOn)music.start();
   snd.click();last=performance.now();
 });
+
+/* ---------- Settings: audio, player profile (name + id), wallet ---------- */
+function setMsg(el,cls,txt){if(!el)return;el.className='setMsg'+(cls?' '+cls:'');el.textContent=txt||'';}
+function shortAddr(a){return a?a.slice(0,4)+'…'+a.slice(-4):'';}
+function applySfxOn(on){
+  SET.sfxOn=on;muted=!on;saveSet();
+  $('muteBtn').textContent=on?'🔊':'🔇';
+  const t=$('sfxToggle');if(t)t.checked=on;
+}
+function applyMusicOn(on){
+  SET.musicOn=on;saveSet();
+  const t=$('musicToggle');if(t)t.checked=on;
+  if(on){const a=ac();if(a&&a.state==='suspended')a.resume();music.start();}
+  else music.stop();
+}
+function renderWallet(){
+  const btn=$('walletBtn'),msg=$('walletMsg');
+  if(wallet&&wallet.addr){
+    btn.classList.add('connected');
+    btn.textContent='✅ '+shortAddr(wallet.addr)+'  ·  tap to disconnect';
+    setMsg(msg,'ok','Connected'+(wallet.chain?' on '+wallet.chain:''));
+  }else{
+    btn.classList.remove('connected');
+    btn.textContent='🔗 Connect Wallet';
+    setMsg(msg,'','');
+  }
+}
+async function connectWallet(){
+  const msg=$('walletMsg');
+  if(wallet&&wallet.addr){                       // already connected -> disconnect
+    try{if(wallet.chain==='SOL'&&window.solana&&window.solana.disconnect)await window.solana.disconnect();}catch(e){}
+    wallet=null;try{localStorage.removeItem('pk_wallet');}catch(e){}
+    renderWallet();return;
+  }
+  const eth=window.ethereum,sol=window.solana;
+  if(!eth&&!(sol&&sol.isPhantom)){setMsg(msg,'err','No wallet found — install MetaMask or Phantom.');return;}
+  setMsg(msg,'info','Connecting…');
+  try{
+    let chain,addr;
+    if(eth){const accs=await eth.request({method:'eth_requestAccounts'});chain='ETH';addr=accs&&accs[0];}
+    else{const r=await sol.connect();chain='SOL';addr=r.publicKey.toString();}
+    if(!addr)throw new Error('no account');
+    wallet={chain,addr};try{localStorage.setItem('pk_wallet',JSON.stringify(wallet));}catch(e){}
+    renderWallet();
+  }catch(e){setMsg(msg,'err',(e&&e.code===4001)?'Connection rejected.':'Could not connect wallet.');}
+}
+function updateProfile(){
+  $('pidView').textContent=PID;
+  const inp=$('nameInput');if(inp&&document.activeElement!==inp)inp.value=playerName||'';
+}
+function saveName(){
+  const msg=$('nameMsg'),raw=($('nameInput').value||'').trim();
+  if(!/^[\w \-]{2,16}$/.test(raw)){setMsg(msg,'err','Use 2–16 letters, numbers, spaces or - _');return;}
+  setMsg(msg,'info','Checking availability…');
+  fetch('/api/name',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({id:PID,name:raw})})
+    .then(r=>r.json()).then(d=>{
+      if(d&&d.ok){playerName=d.name;try{localStorage.setItem('pk_name',playerName);}catch(e){}
+        setMsg(msg,'ok','✓ Saved as "'+playerName+'"');updateProfile();}
+      else if(d&&d.error==='taken'){setMsg(msg,'err','Name already taken');}
+      else if(d&&d.error==='bad_name'){setMsg(msg,'err','That name isn’t allowed.');}
+      else setMsg(msg,'err','Could not save name — try again.');
+    })
+    .catch(()=>{                                   // API unreachable -> keep it on-device
+      playerName=raw;try{localStorage.setItem('pk_name',playerName);}catch(e){}
+      setMsg(msg,'info','Saved on this device (offline).');updateProfile();
+    });
+}
+function openSettings(){
+  const a=ac();if(a&&a.state==='suspended')a.resume();
+  $('musicToggle').checked=SET.musicOn;
+  $('sfxToggle').checked=SET.sfxOn;
+  $('musicVol').value=Math.round(SET.musicVol*100);
+  $('sfxVol').value=Math.round(SET.sfxVol*100);
+  updateProfile();renderWallet();setMsg($('nameMsg'),'','');
+  $('settingsModal').classList.add('open');
+}
+function closeSettings(){$('settingsModal').classList.remove('open');}
+
+$('setBtn').onclick=()=>{openSettings();snd.click();};
+$('landingGear').addEventListener('click',e=>{e.stopPropagation();openSettings();});
+$('closeSettings').onclick=()=>{closeSettings();snd.click();};
+$('musicToggle').onchange=e=>applyMusicOn(e.target.checked);
+$('sfxToggle').onchange=e=>{applySfxOn(e.target.checked);if(e.target.checked)snd.click();};
+$('musicVol').oninput=e=>{SET.musicVol=(+e.target.value)/100;music.setVol(SET.musicVol);saveSet();};
+$('sfxVol').oninput=e=>{SET.sfxVol=(+e.target.value)/100;if(sfxGain)sfxGain.gain.value=SET.sfxVol;saveSet();};
+$('sfxVol').onchange=()=>{if(SET.sfxOn)snd.click();};
+$('nameSave').onclick=saveName;
+$('nameInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();saveName();}});
+$('pidCopy').onclick=()=>{
+  const done=()=>{const b=$('pidCopy');b.textContent='Copied!';setTimeout(()=>{b.textContent='Copy';},1200);};
+  try{navigator.clipboard.writeText(PID).then(done,done);}catch(e){done();}
+};
+$('walletBtn').onclick=connectWallet;
+$('muteBtn').textContent=SET.sfxOn?'🔊':'🔇';   // reflect saved SFX state at boot
+
+/* ---------- 3D intro banner reel: game-themed slats that flip up on the X axis.
+     Each slat is a face of a 6-sided drum; the drum rotates -60° every few
+     seconds so the next banner tumbles into the reading window. ---------- */
+const introReel=(function(){
+  const BANNERS=[
+    {em:'🎡', hl:'BUILD YOUR PARK',    sc:'One empty plot → a whole empire.',   ac:'--gold'},
+    {em:'🏗️', hl:'1 LAND = 1 RIDE',    sc:'Buy the plot, ride opens instantly.', ac:'--cyan'},
+    {em:'💰', hl:'COLLECT THE CASH',   sc:'Guests pay at the booth — grab it.',  ac:'--green'},
+    {em:'⬆️', hl:'UPGRADE & GROW',     sc:'Level up a ride, watch it grow.',     ac:'--pink'},
+    {em:'🧑‍💼', hl:'HIRE & AUTOMATE',    sc:'A collector banks the cash for you.', ac:'--purple'},
+    {em:'🎢', hl:'CAROUSEL → COASTER', sc:'12 rides to unlock, each bigger.',    ac:'--gold'},
+  ];
+  const reel=$('introReel'),drum=$('reelDrum');
+  if(!reel||!drum)return {stop(){}};
+  const N=BANNERS.length,step=360/N;
+  let idx=0,timer=null,R=0;
+  const slats=BANNERS.map(b=>{
+    const s=document.createElement('div');s.className='slat';
+    s.style.setProperty('--ac','var('+b.ac+')');
+    s.innerHTML='<span class="em"></span><span class="tx"><span class="hl"></span><span class="sc"></span></span>';
+    s.querySelector('.em').textContent=b.em;
+    s.querySelector('.hl').textContent=b.hl;
+    s.querySelector('.sc').textContent=b.sc;
+    drum.appendChild(s);return s;
+  });
+  function layout(){
+    const h=reel.clientHeight||98;
+    R=(h/2)/Math.tan(Math.PI/N);
+    for(let i=0;i<slats.length;i++)
+      slats[i].style.transform='rotateX('+(i*step)+'deg) translateZ('+R.toFixed(2)+'px)';
+    drum.style.transform='rotateX('+(-idx*step)+'deg)';
+  }
+  const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  layout();
+  requestAnimationFrame(layout);            // re-measure once the overlay has painted
+  window.addEventListener('resize',layout);
+  if(!reduce)timer=setInterval(()=>{
+    if(document.hidden)return;
+    idx++;drum.style.transform='rotateX('+(-idx*step)+'deg)';
+  },3600);
+  return {stop(){if(timer){clearInterval(timer);timer=null;}}};
+})();
 
 /* ---------- landing counters: realtime via /api (stats-server.js behind nginx).
      Falls back to a local estimate only if the API is unreachable. ---------- */
 (function(){
   const eT=$('statTotal'),eO=$('statOnline');
-  let pid=null;
-  try{
-    pid=localStorage.getItem('pk_pid');
-    if(!pid){pid='p'+Date.now().toString(36)+Math.random().toString(36).slice(2,10);
-      localStorage.setItem('pk_pid',pid);}
-  }catch(e){pid='p'+Math.random().toString(36).slice(2,12)+Math.random().toString(36).slice(2,6);}
+  const pid=PID;
   function draw(t,o){eT.textContent=Number(t).toLocaleString('en-US');eO.textContent=o;}
   let live=false,fb=false;
   function ping(){
     fetch('/api/hello',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({id:pid})})
-      .then(r=>r.json()).then(d=>{live=true;draw(d.total,d.online);})
+      .then(r=>r.json()).then(d=>{
+        live=true;draw(d.total,d.online);
+        if(d.name&&!playerName){playerName=d.name;try{localStorage.setItem('pk_name',playerName);}catch(e){}
+          if($('settingsModal').classList.contains('open'))updateProfile();}
+      })
       .catch(()=>{if(!live)fallback();});
   }
   function fallback(){
