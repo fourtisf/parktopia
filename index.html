@@ -219,6 +219,12 @@
     display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(6px);
     box-shadow:0 4px 12px rgba(0,0,0,.35);transition:transform .12s;}
   #landingGear:active{transform:scale(.9) rotate(30deg);}
+  #landingX{position:absolute;top:14px;left:14px;z-index:6;width:46px;height:46px;border-radius:14px;
+    background:rgba(22,19,45,.82);border:2px solid rgba(255,255,255,.18);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(6px);
+    box-shadow:0 4px 12px rgba(0,0,0,.35);transition:transform .12s;pointer-events:auto;text-decoration:none;}
+  #landingX:active{transform:scale(.9);}
+  #landingX svg{width:22px;height:22px;fill:#fff;}
   #settingsModal{z-index:200;}
   .setSection{margin-bottom:15px;padding-bottom:13px;border-bottom:1px solid rgba(255,255,255,.09);}
   .setSection:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
@@ -354,6 +360,9 @@
 <div id="joyBase"></div><div id="joyKnob"></div>
 
 <div id="startOv">
+  <a id="landingX" href="https://x.com/Parktopiafun" target="_blank" rel="noopener noreferrer" aria-label="Follow @Parktopiafun on X">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.66l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+  </a>
   <button id="landingGear" aria-label="Settings">⚙️</button>
   <div class="logoFerris">🎡</div>
   <img id="logoImg" src="logo.png" alt="PARKTOPIA — Theme Park Tycoon">
@@ -2872,6 +2881,7 @@ function closeSettings(){$('settingsModal').classList.remove('open');}
 
 $('setBtn').onclick=()=>{openSettings();snd.click();};
 $('landingGear').addEventListener('click',e=>{e.stopPropagation();openSettings();});
+$('landingX').addEventListener('click',e=>{e.stopPropagation();});   // open X, don't start the game
 $('closeSettings').onclick=()=>{closeSettings();snd.click();};
 $('musicToggle').onchange=e=>applyMusicOn(e.target.checked);
 $('sfxToggle').onchange=e=>{applySfxOn(e.target.checked);if(e.target.checked)snd.click();};
