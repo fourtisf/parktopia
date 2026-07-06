@@ -10,16 +10,29 @@ const FILE = path.join(__dirname, 'stats-data.json');
 const PORT = 3001;
 const ONLINE_WINDOW_MS = 70e3;
 
-let data = { total: 0, ids: {}, names: {}, players: {} };
+let data = { total: 0, ids: {}, names: {}, players: {}, scores: {}, plays: 0 };
 try {
   Object.assign(data, JSON.parse(fs.readFileSync(FILE, 'utf8')));
   data.ids = data.ids || {};
   data.names = data.names || {};      // lowercased name -> owner id
   data.players = data.players || {};  // id -> { name, key }
+  data.scores = data.scores || {};    // id -> { name, score, wallet }
+  data.plays = data.plays || 0;       // total "tap to play" events (conversion)
 } catch (e) { /* fresh start */ }
 
 const ID_RE = /^[\w-]{6,64}$/;
 const NAME_RE = /^[\w \-]{2,16}$/;    // letters, digits, space, hyphen, underscore
+const MAX_SCORE = 1e12;               // clamp to keep obvious junk out of the board
+
+function leaderboard(limit) {
+  const rows = [];
+  for (const id in data.scores) {
+    const s = data.scores[id];
+    rows.push({ name: s.name || 'Player', score: s.score || 0, wallet: !!s.wallet });
+  }
+  rows.sort((a, b) => b.score - a.score);
+  return rows.slice(0, Math.max(1, Math.min(100, limit || 20)));
+}
 
 function readBody(req, res, cb) {
   let body = '';
@@ -77,8 +90,29 @@ const server = http.createServer((req, res) => {
       dirty = true;
       res.end(JSON.stringify({ ok: true, name: name }));
     });
+  } else if (url === '/api/score' && req.method === 'POST') {
+    readBody(req, res, j => {
+      const id = String(j.id || '').slice(0, 64);
+      if (!ID_RE.test(id)) { res.statusCode = 400; res.end(JSON.stringify({ ok: false, error: 'bad_id' })); return; }
+      let score = Number(j.score);
+      if (!isFinite(score) || score < 0) score = 0;
+      score = Math.min(Math.floor(score), MAX_SCORE);
+      const prev = data.scores[id] || {};
+      const name = (data.players[id] || {}).name || (NAME_RE.test(String(j.name || '').trim()) ? String(j.name).trim() : (prev.name || 'Player'));
+      const wallet = j.wallet ? String(j.wallet).slice(0, 64) : (prev.wallet || null);
+      data.scores[id] = { name: name, score: Math.max(score, prev.score || 0), wallet: wallet };
+      dirty = true;
+      res.end(JSON.stringify({ ok: true, best: data.scores[id].score }));
+    });
+  } else if (url === '/api/leaderboard') {
+    let limit = 20; const q = req.url.split('?')[1] || '';
+    const mm = q.match(/limit=(\d+)/); if (mm) limit = parseInt(mm[1], 10);
+    res.end(JSON.stringify({ top: leaderboard(limit), players: Object.keys(data.scores).length }));
+  } else if (url === '/api/play' && req.method === 'POST') {
+    data.plays++; dirty = true;
+    res.end(JSON.stringify({ plays: data.plays }));
   } else if (url === '/api/stats') {
-    res.end(JSON.stringify({ total: data.total, online: onlineCount() }));
+    res.end(JSON.stringify({ total: data.total, online: onlineCount(), plays: data.plays }));
   } else {
     res.statusCode = 404;
     res.end('{}');
