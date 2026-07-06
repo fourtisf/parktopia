@@ -177,33 +177,58 @@
     filter:drop-shadow(0 12px 30px rgba(0,0,0,.5));pointer-events:none;}
   #startOv .sub{font-weight:800;color:var(--gold);font-size:17px;letter-spacing:2px;text-shadow:0 2px 10px rgba(0,0,0,.7);}
 
-  /* ---- 3D intro banner — one panel that flips up on the X axis (departure-board style).
-     Deliberately avoids mask-image / a preserve-3d stack: both break silently when a WebGL
-     canvas composites behind them. A single rotateX panel is GPU-safe and always shows. ---- */
-  #introReel{position:relative;width:min(560px,92vw);height:96px;margin:6px 0 4px;
+  /* ---- Premium 3D intro banner — a glass card that flips up on the X axis.
+     currentColor carries the per-banner accent (set via --ac) into the medallion,
+     glow, kicker and underline. GPU-safe: single rotateX panel, no mask/preserve-3d. ---- */
+  #introReel{position:relative;width:min(560px,92vw);height:100px;margin:6px 0 4px;
     flex:0 0 auto;pointer-events:none;}   /* never let the flex column squash it — child is absolute */
-  #introReel .slat{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:16px;
-    padding:0 22px;border-radius:20px;transform-origin:center center;
+  #introReel .slat{position:absolute;inset:0;display:flex;align-items:center;gap:17px;
+    padding:0 24px;border-radius:22px;transform-origin:center center;color:var(--ac,#ffd23f);
     backface-visibility:hidden;-webkit-backface-visibility:hidden;
-    background:linear-gradient(180deg,rgba(30,25,62,.94),rgba(16,12,36,.94));
-    border:2px solid var(--ac,rgba(255,255,255,.2));
-    box-shadow:0 12px 28px rgba(0,0,0,.45),0 0 22px -6px var(--ac,transparent),
-      inset 0 1px 0 rgba(255,255,255,.12),inset 0 0 34px rgba(0,0,0,.4);}
-  #introReel .em{font-size:42px;line-height:1;flex:0 0 auto;
-    filter:drop-shadow(0 3px 6px rgba(0,0,0,.55));}
-  #introReel .tx{text-align:left;min-width:0;max-width:100%;overflow:hidden;}
-  #introReel .hl{display:block;font-weight:800;font-size:24px;letter-spacing:.4px;line-height:1.04;
-    color:var(--ac,var(--gold));text-shadow:0 2px 9px rgba(0,0,0,.6);
+    background:linear-gradient(157deg,rgba(44,37,86,.96),rgba(15,11,34,.98));
+    box-shadow:0 16px 38px rgba(0,0,0,.52),0 0 42px -10px currentColor,
+      inset 0 1.5px 0 rgba(255,255,255,.16),inset 0 0 0 1.5px rgba(255,255,255,.06);}
+  #introReel .slat::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:radial-gradient(130px 96px at 8% 46%,currentColor,transparent 70%),
+      linear-gradient(180deg,rgba(255,255,255,.12),transparent 32%);opacity:.2;}
+  #introReel .slat::after{content:'';position:absolute;left:24px;right:24px;bottom:13px;height:2px;
+    border-radius:2px;background:linear-gradient(90deg,currentColor,transparent 72%);opacity:.55;}
+  #introReel .shine{position:absolute;inset:0;border-radius:inherit;overflow:hidden;z-index:0;pointer-events:none;}
+  #introReel .shine::before{content:'';position:absolute;top:-60%;bottom:-60%;left:-55%;width:34%;
+    transform:skewX(-18deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.17),transparent);
+    animation:shineSweep 5.6s ease-in-out infinite;}
+  @keyframes shineSweep{0%{left:-55%;}58%,100%{left:140%;}}
+  #introReel .em{position:relative;z-index:1;flex:0 0 auto;width:58px;height:58px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:30px;
+    background:radial-gradient(circle at 34% 26%,rgba(255,255,255,.26),rgba(255,255,255,.05) 58%),
+      linear-gradient(180deg,rgba(255,255,255,.12),rgba(0,0,0,.2));
+    box-shadow:inset 0 0 0 2px currentColor,inset 0 2px 4px rgba(255,255,255,.25),
+      0 7px 15px rgba(0,0,0,.5),0 0 20px -4px currentColor;}
+  #introReel .em span{filter:drop-shadow(0 2px 3px rgba(0,0,0,.55));}
+  #introReel .tx{position:relative;z-index:1;display:flex;flex-direction:column;justify-content:center;
+    min-width:0;max-width:100%;text-align:left;}
+  #introReel .kick{font-size:10px;font-weight:800;letter-spacing:2.6px;text-transform:uppercase;
+    color:currentColor;opacity:.92;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #introReel .hl{font-size:24px;font-weight:800;letter-spacing:.2px;line-height:1.02;color:#fff;
+    text-shadow:0 1px 0 rgba(0,0,0,.35),0 2px 12px rgba(0,0,0,.55);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
-  #introReel .sc{display:block;margin-top:3px;font-weight:700;font-size:12.5px;letter-spacing:.2px;
-    color:#e7ecff;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  #introReel .sc{font-size:12px;font-weight:700;letter-spacing:.2px;color:#cfd6f5;opacity:.92;margin-top:3px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
   @media (max-width:480px){
-    #introReel{height:82px;}
-    #introReel .slat{gap:12px;padding:0 16px;}
-    #introReel .em{font-size:32px;}
+    #introReel{height:84px;}
+    #introReel .slat{gap:12px;padding:0 15px;}
+    #introReel .slat::after{left:15px;right:15px;bottom:10px;}
+    #introReel .em{width:46px;height:46px;font-size:24px;}
+    #introReel .kick{font-size:9px;letter-spacing:2px;margin-bottom:2px;}
     #introReel .hl{font-size:18px;}
-    #introReel .sc{font-size:11px;}
+    #introReel .sc{font-size:10.5px;}
   }
+  @media (max-width:360px){
+    #introReel .slat{gap:10px;padding:0 13px;}
+    #introReel .em{width:44px;height:44px;font-size:23px;}
+    #introReel .hl{font-size:16px;}
+  }
+  @media (prefers-reduced-motion:reduce){#introReel .shine::before{animation:none;display:none;}}
 
   #stats{display:flex;gap:14px;margin-top:2px;}
   .statBox{background:rgba(22,19,45,.85);border:2px solid rgba(255,255,255,.16);border-radius:18px;
@@ -2963,12 +2988,12 @@ renderWallet();                                 // reflect a saved wallet on the
      card in from below — a single rotateX, safe over the WebGL canvas. ---------- */
 const introReel=(function(){
   const BANNERS=[
-    {em:'🎡', hl:'BUILD YOUR PARK',    sc:'One empty plot → a whole empire.',   ac:'--gold'},
-    {em:'🏗️', hl:'1 LAND = 1 RIDE',    sc:'Buy the plot, ride opens instantly.', ac:'--cyan'},
-    {em:'💰', hl:'COLLECT THE CASH',   sc:'Guests pay at the booth — grab it.',  ac:'--green'},
-    {em:'⬆️', hl:'UPGRADE & GROW',     sc:'Level up a ride, watch it grow.',     ac:'--pink'},
-    {em:'🧑‍💼', hl:'HIRE & AUTOMATE',    sc:'A collector banks the cash for you.', ac:'--purple'},
-    {em:'🎢', hl:'CAROUSEL → COASTER', sc:'12 rides to unlock, each bigger.',    ac:'--gold'},
+    {em:'🎡', kick:'YOUR EMPIRE', hl:'BUILD YOUR PARK',    sc:'One empty plot → a whole empire.',    ac:'--gold'},
+    {em:'🏗️', kick:'INSTANT',     hl:'1 LAND = 1 RIDE',    sc:'Buy a plot — ride opens instantly.',    ac:'--cyan'},
+    {em:'💰', kick:'EARN',        hl:'COLLECT THE CASH',   sc:'Guests pay at the booth. Grab it.',     ac:'--green'},
+    {em:'⬆️', kick:'PROGRESS',    hl:'UPGRADE & GROW',     sc:'Level a ride up — watch it grow.',      ac:'--pink'},
+    {em:'🧑‍💼', kick:'IDLE',        hl:'HIRE & AUTOMATE',    sc:'A collector banks cash for you.',       ac:'--purple'},
+    {em:'🎢', kick:'12 RIDES',    hl:'CAROUSEL → COASTER', sc:'Unlock all twelve — each bigger.',      ac:'--gold'},
   ];
   const slat=$('reelSlat');
   if(!slat)return {stop(){}};
@@ -2977,8 +3002,10 @@ const introReel=(function(){
   function render(k){
     const b=BANNERS[k];
     slat.style.setProperty('--ac','var('+b.ac+')');
-    slat.innerHTML='<span class="em"></span><span class="tx"><span class="hl"></span><span class="sc"></span></span>';
-    slat.querySelector('.em').textContent=b.em;
+    slat.innerHTML='<span class="shine"></span><span class="em"><span></span></span>'
+      +'<span class="tx"><span class="kick"></span><span class="hl"></span><span class="sc"></span></span>';
+    slat.querySelector('.em span').textContent=b.em;
+    slat.querySelector('.kick').textContent=b.kick;
     slat.querySelector('.hl').textContent=b.hl;
     slat.querySelector('.sc').textContent=b.sc;
   }
