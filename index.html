@@ -153,18 +153,16 @@
     filter:drop-shadow(0 12px 30px rgba(0,0,0,.5));pointer-events:none;}
   #startOv .sub{font-weight:800;color:var(--gold);font-size:17px;letter-spacing:2px;text-shadow:0 2px 10px rgba(0,0,0,.7);}
 
-  /* ---- 3D intro banner reel — slats flip up on the X axis (split-flap drum) ---- */
-  #introReel{position:relative;width:min(560px,92vw);height:98px;margin:6px 0 4px;
-    perspective:1150px;pointer-events:none;
-    -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 24%,#000 76%,transparent 100%);
-            mask-image:linear-gradient(180deg,transparent 0,#000 24%,#000 76%,transparent 100%);}
-  #introReel .drum{position:absolute;inset:0;transform-style:preserve-3d;will-change:transform;
-    transition:transform .95s cubic-bezier(.16,1,.3,1);}
+  /* ---- 3D intro banner — one panel that flips up on the X axis (departure-board style).
+     Deliberately avoids mask-image / a preserve-3d stack: both break silently when a WebGL
+     canvas composites behind them. A single rotateX panel is GPU-safe and always shows. ---- */
+  #introReel{position:relative;width:min(560px,92vw);height:96px;margin:6px 0 4px;
+    pointer-events:none;}
   #introReel .slat{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:16px;
-    padding:0 22px;border-radius:20px;
+    padding:0 22px;border-radius:20px;transform-origin:center center;
     backface-visibility:hidden;-webkit-backface-visibility:hidden;
     background:linear-gradient(180deg,rgba(30,25,62,.94),rgba(16,12,36,.94));
-    border:2px solid var(--ac,rgba(255,255,255,.18));
+    border:2px solid var(--ac,rgba(255,255,255,.2));
     box-shadow:0 12px 28px rgba(0,0,0,.45),0 0 22px -6px var(--ac,transparent),
       inset 0 1px 0 rgba(255,255,255,.12),inset 0 0 34px rgba(0,0,0,.4);}
   #introReel .em{font-size:42px;line-height:1;flex:0 0 auto;
@@ -181,9 +179,6 @@
     #introReel .em{font-size:32px;}
     #introReel .hl{font-size:18px;}
     #introReel .sc{font-size:11px;}
-  }
-  @media (prefers-reduced-motion:reduce){
-    #introReel .drum{transition:opacity .5s ease;}
   }
 
   #stats{display:flex;gap:14px;margin-top:2px;}
@@ -349,7 +344,7 @@
   <button id="landingGear" aria-label="Settings">⚙️</button>
   <div class="logoFerris">🎡</div>
   <img id="logoImg" src="logo.png" alt="PARKTOPIA — Theme Park Tycoon">
-  <div id="introReel" aria-hidden="true"><div class="drum" id="reelDrum"></div></div>
+  <div id="introReel" aria-hidden="true"><div class="slat" id="reelSlat"></div></div>
   <div id="stats">
     <div class="statBox"><b id="statTotal">—</b><span class="lbl">TOTAL PLAYERS</span></div>
     <div class="statBox"><b><span class="dot"></span><span id="statOnline">—</span></b><span class="lbl">ONLINE NOW</span></div>
@@ -2863,9 +2858,10 @@ $('pidCopy').onclick=()=>{
 $('walletBtn').onclick=connectWallet;
 $('muteBtn').textContent=SET.sfxOn?'🔊':'🔇';   // reflect saved SFX state at boot
 
-/* ---------- 3D intro banner reel: game-themed slats that flip up on the X axis.
-     Each slat is a face of a 6-sided drum; the drum rotates -60° every few
-     seconds so the next banner tumbles into the reading window. ---------- */
+/* ---------- 3D intro banner: one panel that flips up on the X axis.
+     Renders the first banner immediately (visible even if the flip never runs),
+     then every few seconds flips the current card out over the top and the next
+     card in from below — a single rotateX, safe over the WebGL canvas. ---------- */
 const introReel=(function(){
   const BANNERS=[
     {em:'🎡', hl:'BUILD YOUR PARK',    sc:'One empty plot → a whole empire.',   ac:'--gold'},
@@ -2875,34 +2871,39 @@ const introReel=(function(){
     {em:'🧑‍💼', hl:'HIRE & AUTOMATE',    sc:'A collector banks the cash for you.', ac:'--purple'},
     {em:'🎢', hl:'CAROUSEL → COASTER', sc:'12 rides to unlock, each bigger.',    ac:'--gold'},
   ];
-  const reel=$('introReel'),drum=$('reelDrum');
-  if(!reel||!drum)return {stop(){}};
-  const N=BANNERS.length,step=360/N;
-  let idx=0,timer=null,R=0;
-  const slats=BANNERS.map(b=>{
-    const s=document.createElement('div');s.className='slat';
-    s.style.setProperty('--ac','var('+b.ac+')');
-    s.innerHTML='<span class="em"></span><span class="tx"><span class="hl"></span><span class="sc"></span></span>';
-    s.querySelector('.em').textContent=b.em;
-    s.querySelector('.hl').textContent=b.hl;
-    s.querySelector('.sc').textContent=b.sc;
-    drum.appendChild(s);return s;
-  });
-  function layout(){
-    const h=reel.clientHeight||98;
-    R=(h/2)/Math.tan(Math.PI/N);
-    for(let i=0;i<slats.length;i++)
-      slats[i].style.transform='rotateX('+(i*step)+'deg) translateZ('+R.toFixed(2)+'px)';
-    drum.style.transform='rotateX('+(-idx*step)+'deg)';
+  const slat=$('reelSlat');
+  if(!slat)return {stop(){}};
+  const N=BANNERS.length,DUR=460;
+  let i=0,timer=null;
+  function render(k){
+    const b=BANNERS[k];
+    slat.style.setProperty('--ac','var('+b.ac+')');
+    slat.innerHTML='<span class="em"></span><span class="tx"><span class="hl"></span><span class="sc"></span></span>';
+    slat.querySelector('.em').textContent=b.em;
+    slat.querySelector('.hl').textContent=b.hl;
+    slat.querySelector('.sc').textContent=b.sc;
   }
+  render(0);                                  // show banner #1 right away, no animation needed
   const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
-  layout();
-  requestAnimationFrame(layout);            // re-measure once the overlay has painted
-  window.addEventListener('resize',layout);
-  if(!reduce)timer=setInterval(()=>{
+  const EASE='transform '+DUR+'ms cubic-bezier(.4,0,.2,1)';
+  function flip(){
     if(document.hidden)return;
-    idx++;drum.style.transform='rotateX('+(-idx*step)+'deg)';
-  },3600);
+    slat.style.transition=EASE;
+    slat.style.transform='perspective(900px) rotateX(-90deg)';  // current card tips up and away
+    setTimeout(()=>{
+      i=(i+1)%N;render(i);
+      slat.style.transition='none';
+      slat.style.transform='perspective(900px) rotateX(90deg)'; // next card waits just below
+      void slat.offsetHeight;                                   // commit the jump un-animated
+      requestAnimationFrame(()=>{
+        slat.style.transition=EASE;
+        slat.style.transform='perspective(900px) rotateX(0deg)';// …and flips up into view
+      });
+      setTimeout(()=>{ slat.style.transition='none'; slat.style.transform='none'; },DUR+50);
+    },DUR);                                                     // back to a plain 2D layer at rest
+  }
+  function step(){if(document.hidden)return;i=(i+1)%N;render(i);}   // reduced-motion: plain swap
+  timer=setInterval(reduce?step:flip,reduce?4200:3600);
   return {stop(){if(timer){clearInterval(timer);timer=null;}}};
 })();
 
