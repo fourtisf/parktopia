@@ -149,9 +149,8 @@
       url('landing-bg.jpg') center/cover no-repeat #1a1740;}
   #startOv .logoFerris{font-size:82px;animation:spinSlow 9s linear infinite;filter:drop-shadow(0 8px 14px rgba(0,0,0,.45));}
   @keyframes spinSlow{to{transform:rotate(360deg);}}
-  #startOv h1{font-size:clamp(46px,10vw,84px);font-weight:800;color:#fff;letter-spacing:2px;
-    -webkit-text-stroke:3px var(--purple-d);text-shadow:0 6px 0 var(--purple-d),0 14px 30px rgba(0,0,0,.5);}
-  #startOv h1 span{color:var(--gold);-webkit-text-stroke:3px #b8860b;text-shadow:0 6px 0 #b8860b,0 14px 30px rgba(0,0,0,.5);}
+  #logoImg{width:min(680px,90vw);margin:-18px 0 -26px;
+    filter:drop-shadow(0 12px 30px rgba(0,0,0,.5));pointer-events:none;}
   #startOv .sub{font-weight:800;color:var(--gold);font-size:17px;letter-spacing:2px;text-shadow:0 2px 10px rgba(0,0,0,.7);}
   #stats{display:flex;gap:14px;margin-top:2px;}
   .statBox{background:rgba(22,19,45,.85);border:2px solid rgba(255,255,255,.16);border-radius:18px;
@@ -231,7 +230,7 @@
 
 <div id="startOv">
   <div class="logoFerris">🎡</div>
-  <h1>PARK<span>TOPIA</span></h1>
+  <img id="logoImg" src="logo.png" alt="PARKTOPIA — Theme Park Tycoon">
   <div class="sub">✦ HD · GIANT LANDS · FRONT CASHIERS ✦</div>
   <div id="stats">
     <div class="statBox"><b id="statTotal">—</b><span class="lbl">TOTAL PLAYERS</span></div>
@@ -242,7 +241,7 @@
   <div class="ctl">WASD / joystick to move · stand on pads to build & upgrade<br>walk near money to collect it</div>
 </div>
 
-<div id="verTag">PARKTOPIA v2.1 HD</div>
+<div id="verTag">PARKTOPIA v2.2 HD</div>
 <script>
 /* ================================================================
    PARKTOPIA HD v0.4 — 12 plots, 1 land = 1 ride (Three.js)
