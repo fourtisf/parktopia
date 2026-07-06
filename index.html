@@ -242,7 +242,7 @@
   <div class="ctl">WASD / joystick to move · stand on pads to build & upgrade<br>walk near money to collect it</div>
 </div>
 
-<div id="verTag">PARKTOPIA v2.0 HD</div>
+<div id="verTag">PARKTOPIA v2.1 HD</div>
 <script>
 /* ================================================================
    PARKTOPIA HD v0.4 — 12 plots, 1 land = 1 ride (Three.js)
@@ -2584,20 +2584,39 @@ $('startOv').addEventListener('click',()=>{
   snd.click();last=performance.now();
 });
 
-/* ---------- landing counters (client-side simulation until a stats backend exists) ---------- */
+/* ---------- landing counters: realtime via /api (stats-server.js behind nginx).
+     Falls back to a local estimate only if the API is unreachable. ---------- */
 (function(){
-  const LAUNCH=1780617600000; /* park opening day */
-  const days=Math.max(1,(Date.now()-LAUNCH)/864e5);
-  let total=Math.floor(9400+days*415+Math.sin(days*1.7)*120);
-  let online=clamp(Math.floor(66+34*Math.sin(Date.now()/3.9e6)+rnd(14)),38,146);
   const eT=$('statTotal'),eO=$('statOnline');
-  function draw(){eT.textContent=total.toLocaleString('en-US');eO.textContent=online;}
-  draw();
-  setInterval(()=>{
-    if(Math.random()<.45)total++;
-    if(Math.random()<.6)online=clamp(online+(Math.random()<.5?-1:1),38,146);
-    draw();
-  },2600);
+  let pid=null;
+  try{
+    pid=localStorage.getItem('pk_pid');
+    if(!pid){pid='p'+Date.now().toString(36)+Math.random().toString(36).slice(2,10);
+      localStorage.setItem('pk_pid',pid);}
+  }catch(e){pid='p'+Math.random().toString(36).slice(2,12)+Math.random().toString(36).slice(2,6);}
+  function draw(t,o){eT.textContent=Number(t).toLocaleString('en-US');eO.textContent=o;}
+  let live=false,fb=false;
+  function ping(){
+    fetch('/api/hello',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id:pid})})
+      .then(r=>r.json()).then(d=>{live=true;draw(d.total,d.online);})
+      .catch(()=>{if(!live)fallback();});
+  }
+  function fallback(){
+    if(fb)return;fb=true;
+    const days=Math.max(1,(Date.now()-1780617600000)/864e5);
+    let total=Math.floor(9400+days*415);
+    let on=clamp(Math.floor(66+34*Math.sin(Date.now()/3.9e6)+rnd(14)),38,146);
+    draw(total,on);
+    setInterval(()=>{
+      if(live)return;
+      if(Math.random()<.45)total++;
+      if(Math.random()<.6)on=clamp(on+(Math.random()<.5?-1:1),38,146);
+      draw(total,on);
+    },2600);
+  }
+  ping();
+  setInterval(ping,25000);
 })();
 
 /* ---------- Main loop ---------- */
