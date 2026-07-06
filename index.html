@@ -157,7 +157,7 @@
      Deliberately avoids mask-image / a preserve-3d stack: both break silently when a WebGL
      canvas composites behind them. A single rotateX panel is GPU-safe and always shows. ---- */
   #introReel{position:relative;width:min(560px,92vw);height:96px;margin:6px 0 4px;
-    pointer-events:none;}
+    flex:0 0 auto;pointer-events:none;}   /* never let the flex column squash it — child is absolute */
   #introReel .slat{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:16px;
     padding:0 22px;border-radius:20px;transform-origin:center center;
     backface-visibility:hidden;-webkit-backface-visibility:hidden;
@@ -194,9 +194,17 @@
     padding:14px 46px;border-radius:22px;box-shadow:0 6px 0 #c99a12,0 14px 26px rgba(0,0,0,.45);
     animation:breathe 1.6s ease-in-out infinite;}
   @keyframes breathe{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
-  #caPill{margin-top:4px;background:rgba(22,19,45,.88);border:2px solid var(--gold);color:var(--gold);
+  #caPill{background:rgba(22,19,45,.88);border:2px solid var(--gold);color:var(--gold);
     font-weight:800;font-size:15px;letter-spacing:2.5px;padding:9px 28px;border-radius:20px;
     box-shadow:0 0 20px rgba(255,210,63,.28);}
+  #landingCrypto{margin-top:6px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;}
+  #landingWallet{background:linear-gradient(180deg,#7C5CFF,#5a3fd6);border:2px solid rgba(255,255,255,.22);
+    color:#fff;font-family:inherit;font-weight:800;font-size:15px;letter-spacing:.6px;padding:10px 26px;
+    border-radius:20px;cursor:pointer;pointer-events:auto;transition:transform .12s;
+    box-shadow:0 5px 0 #4832a8,0 10px 22px rgba(0,0,0,.4);}
+  #landingWallet:active{transform:translateY(3px);box-shadow:0 2px 0 #4832a8,0 6px 14px rgba(0,0,0,.4);}
+  #landingWallet.connected{background:linear-gradient(180deg,#5fd068,#3fae4c);border-color:rgba(255,255,255,.3);
+    box-shadow:0 5px 0 #2e8b3a,0 10px 22px rgba(0,0,0,.4);}
   #startOv .ctl{color:#e6ecff;font-size:13px;font-weight:700;opacity:.85;margin-top:6px;text-align:center;
     line-height:1.6;text-shadow:0 1px 6px rgba(0,0,0,.8);}
 
@@ -350,7 +358,10 @@
     <div class="statBox"><b><span class="dot"></span><span id="statOnline">—</span></b><span class="lbl">ONLINE NOW</span></div>
   </div>
   <div class="play">▶ &nbsp;TAP TO PLAY</div>
-  <div id="caPill">💊 CA · COMING SOON</div>
+  <div id="landingCrypto">
+    <button id="landingWallet">🔗 Connect Wallet</button>
+    <div id="caPill">💊 CA · COMING SOON</div>
+  </div>
   <div class="ctl">WASD / joystick to move · stand on pads to build & upgrade<br>walk near money to collect it</div>
 </div>
 
@@ -2778,16 +2789,23 @@ function applyMusicOn(on){
   else music.stop();
 }
 function renderWallet(){
-  const btn=$('walletBtn'),msg=$('walletMsg');
-  if(wallet&&wallet.addr){
-    btn.classList.add('connected');
-    btn.textContent='✅ '+shortAddr(wallet.addr)+'  ·  tap to disconnect';
-    setMsg(msg,'ok','Connected'+(wallet.chain?' on '+wallet.chain:''));
-  }else{
-    btn.classList.remove('connected');
-    btn.textContent='🔗 Connect Wallet';
-    setMsg(msg,'','');
+  const btn=$('walletBtn'),msg=$('walletMsg'),lw=$('landingWallet');
+  const on=!!(wallet&&wallet.addr);
+  if(btn){
+    btn.classList.toggle('connected',on);
+    btn.textContent=on?('✅ '+shortAddr(wallet.addr)+'  ·  tap to disconnect'):'🔗 Connect Wallet';
   }
+  if(msg)setMsg(msg,on?'ok':'',on?('Connected'+(wallet.chain?' on '+wallet.chain:'')):'');
+  if(lw){
+    lw.classList.toggle('connected',on);
+    lw.textContent=on?('✅ '+shortAddr(wallet.addr)):'🔗 Connect Wallet';
+  }
+}
+let _lwFlash=null;
+function flashLanding(txt){                       // brief feedback on the landing button
+  const lw=$('landingWallet');if(!lw)return;
+  lw.textContent=txt;if(_lwFlash)clearTimeout(_lwFlash);
+  _lwFlash=setTimeout(renderWallet,2400);
 }
 async function connectWallet(){
   const msg=$('walletMsg');
@@ -2797,8 +2815,11 @@ async function connectWallet(){
     renderWallet();return;
   }
   const eth=window.ethereum,sol=window.solana;
-  if(!eth&&!(sol&&sol.isPhantom)){setMsg(msg,'err','No wallet found — install MetaMask or Phantom.');return;}
-  setMsg(msg,'info','Connecting…');
+  if(!eth&&!(sol&&sol.isPhantom)){
+    setMsg(msg,'err','No wallet found — install MetaMask or Phantom.');
+    flashLanding('❌ No wallet found');return;
+  }
+  setMsg(msg,'info','Connecting…');flashLanding('⏳ Connecting…');
   try{
     let chain,addr;
     if(eth){const accs=await eth.request({method:'eth_requestAccounts'});chain='ETH';addr=accs&&accs[0];}
@@ -2806,7 +2827,10 @@ async function connectWallet(){
     if(!addr)throw new Error('no account');
     wallet={chain,addr};try{localStorage.setItem('pk_wallet',JSON.stringify(wallet));}catch(e){}
     renderWallet();
-  }catch(e){setMsg(msg,'err',(e&&e.code===4001)?'Connection rejected.':'Could not connect wallet.');}
+  }catch(e){
+    setMsg(msg,'err',(e&&e.code===4001)?'Connection rejected.':'Could not connect wallet.');
+    flashLanding((e&&e.code===4001)?'❌ Rejected':'❌ Failed');
+  }
 }
 function updateProfile(){
   $('pidView').textContent=PID;
@@ -2856,7 +2880,9 @@ $('pidCopy').onclick=()=>{
   try{navigator.clipboard.writeText(PID).then(done,done);}catch(e){done();}
 };
 $('walletBtn').onclick=connectWallet;
+$('landingWallet').addEventListener('click',e=>{e.stopPropagation();connectWallet();});
 $('muteBtn').textContent=SET.sfxOn?'🔊':'🔇';   // reflect saved SFX state at boot
+renderWallet();                                 // reflect a saved wallet on the landing button at boot
 
 /* ---------- 3D intro banner: one panel that flips up on the X axis.
      Renders the first banner immediately (visible even if the flip never runs),
