@@ -713,6 +713,10 @@ function walkable(x,y){
   for(const z of ZONES)if(z.unlocked&&inZone(z,x,y))return true;
   return false;
 }
+/* The player roams the whole park freely (grass included) — only bounded to the
+   ground; rides & booths still push them out via blockers(). Guests keep to
+   paths (they use walkable()); this is player-only so crowds still look right. */
+function playerWalkable(x,y){return x>1&&x<MAPW-1&&y>1&&y<MAPH-1;}
 function onPath(tx,ty){
   if(tx>=23&&tx<=24&&ty>=2&&ty<=43)return true;
   if(tx>=20&&tx<=28&&ty>=33&&ty<=37)return true;
@@ -1063,9 +1067,9 @@ function updatePlayer(dt){
     player.head=Math.atan2(d.x,d.y);
     const sp=playerSpeed();
     const nx=player.x+d.x*sp*dt,ny=player.y+d.y*sp*dt;
-    if(walkable(nx,ny)){player.x=nx;player.y=ny;}
-    else if(walkable(nx,player.y))player.x=nx;
-    else if(walkable(player.x,ny))player.y=ny;
+    if(playerWalkable(nx,ny)){player.x=nx;player.y=ny;}
+    else if(playerWalkable(nx,player.y))player.x=nx;
+    else if(playerWalkable(player.x,ny))player.y=ny;
     player.anim+=dt*11;
   }
   for(const b of blockers()){
