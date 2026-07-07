@@ -261,7 +261,23 @@
   .ldName .ldW{opacity:.85;font-size:12px;}
   .ldScore{color:var(--gold);font-weight:800;white-space:nowrap;}
   .ldLoad{text-align:center;opacity:.7;padding:20px;font-weight:700;}
-  #leaderShare{width:100%;margin-top:4px;}
+  .modalBtnRow{display:flex;gap:9px;margin-top:8px;}
+  .modalBtnRow .act{flex:1;}
+  #settingsModal button.act.alt,#leaderModal button.act.alt{background:linear-gradient(180deg,#5fd068,#3fae4c);box-shadow:0 3px 0 #2e8b3a;}
+  /* goals modal */
+  #goalsModal{z-index:200;}
+  .goalCount{font-size:14px;font-weight:800;color:var(--gold);background:rgba(255,210,63,.14);
+    border:1px solid rgba(255,210,63,.4);border-radius:12px;padding:3px 12px;margin-left:2px;}
+  #goalRows{display:flex;flex-direction:column;gap:7px;max-height:56vh;overflow-y:auto;margin:8px 0 2px;}
+  .glRow{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);border-radius:12px;
+    padding:11px 13px;font-weight:700;font-size:15px;border:1.5px solid transparent;}
+  .glRow.done{background:rgba(95,208,104,.12);border-color:rgba(95,208,104,.4);}
+  .glIco{font-size:24px;flex:0 0 auto;width:30px;text-align:center;}
+  .glT{flex:1;color:#fff;}
+  .glRow.done .glT{opacity:.8;}
+  .glR{font-weight:800;font-size:13.5px;color:var(--gold);white-space:nowrap;}
+  .glRow.done .glR{color:var(--green);}
+  #leaderShare{width:100%;}
   #landingCrypto{margin-top:6px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;}
   #landingWallet{background:linear-gradient(180deg,#7C5CFF,#5a3fd6);border:2px solid rgba(255,255,255,.22);
     color:#fff;font-family:inherit;font-weight:800;font-size:15px;letter-spacing:.6px;padding:10px 26px;
@@ -342,6 +358,7 @@
       <div style="text-align:center;"><span id="lvlBadge">LV 1</span></div>
     </div>
     <button class="roundBtn clickable" id="shopBtn">🛒<small>SHOP</small></button>
+    <button class="roundBtn clickable" id="goalsBtn">🎯<small>GOALS</small></button>
     <button class="roundBtn clickable" id="helpBtn">❓<small>HELP</small></button>
   </div>
 
@@ -402,6 +419,8 @@
       <h3>👛 Wallet</h3>
       <button id="walletBtn">🔗 Connect Wallet</button>
       <div class="setMsg" id="walletMsg"></div>
+      <button id="cloudBtn" class="act" style="width:100%;margin-top:10px;">☁️ Restore from cloud</button>
+      <p class="tip" style="margin-top:7px;">Connect a wallet to back up your park to the cloud and carry it across devices.</p>
     </div>
 
     <div class="setSection">
@@ -423,7 +442,19 @@
     <h2>🏆 Leaderboard <button id="closeLeader">✕</button></h2>
     <p class="tip">Top parks by total value. Build, upgrade &amp; automate to climb the ranks. 👛 = wallet connected.</p>
     <div id="leaderRows"></div>
-    <button class="act" id="leaderShare">📢 Share my park on X</button>
+    <div class="modalBtnRow">
+      <button class="act" id="leaderShare">📢 Share my park</button>
+      <button class="act alt" id="leaderInvite">🎁 Invite friends</button>
+    </div>
+    <p class="tip" style="margin-top:8px;">Invite a friend with your link — <b>you both get 💎 gems</b> when they play.</p>
+  </div>
+</div>
+
+<div class="modalBg" id="goalsModal">
+  <div class="modal">
+    <h2>🎯 Goals <span id="goalCount" class="goalCount">0 / 0</span> <button id="closeGoals">✕</button></h2>
+    <p class="tip">Complete goals to earn 💎 gems. New challenges unlock as your park grows.</p>
+    <div id="goalRows"></div>
   </div>
 </div>
 
@@ -548,13 +579,22 @@ const snd={
      with WebAudio (no audio files). Routed through its own gain bus so its
      volume is independent of the SFX. Cheerful I–vi–IV–V arpeggios + bass. ---------- */
 const music=(function(){
-  const CH=[                                   // C – Am – F – G, 8 eighth-notes each
-    {notes:[523.25,659.25,783.99,1046.50], bass:130.81}, // C  major
-    {notes:[440.00,523.25,659.25,880.00],  bass:110.00}, // A  minor
-    {notes:[349.23,440.00,523.25,698.46],  bass:174.61}, // F  major
-    {notes:[391.99,493.88,587.33,783.99],  bass:196.00}, // G  major
+  // Two progressions that alternate every 4-bar phrase so the loop stays fresh.
+  const SETS=[
+    [ // A: C – Am – F – G (warm & bright)
+      {notes:[523.25,659.25,783.99,1046.50], bass:130.81},
+      {notes:[440.00,523.25,659.25,880.00],  bass:110.00},
+      {notes:[349.23,440.00,523.25,698.46],  bass:174.61},
+      {notes:[391.99,493.88,587.33,783.99],  bass:196.00},
+    ],
+    [ // B: F – G – Em – Am (a gentle lift, then home)
+      {notes:[349.23,440.00,523.25,698.46],  bass:174.61},
+      {notes:[391.99,493.88,587.33,783.99],  bass:196.00},
+      {notes:[329.63,392.00,493.88,659.25],  bass:164.81},
+      {notes:[440.00,523.25,659.25,880.00],  bass:110.00},
+    ],
   ];
-  const ARP=[0,1,2,3,2,3,1,2];                 // gentle up/down arpeggio
+  const ARPS=[[0,1,2,3,2,3,1,2],[0,2,1,3,2,1,3,2]]; // vary the arpeggio per set too
   const STEP=0.25;                             // eighth-note @ 120bpm
   let playing=false,step=0,nextT=0,timer=null;
   function voice(freq,t,dur,type,vol){
@@ -570,6 +610,7 @@ const music=(function(){
   function sched(){
     const a=ac();if(!a||!playing)return;
     while(nextT<a.currentTime+0.18){
+      const setIdx=Math.floor(step/32)%SETS.length,CH=SETS[setIdx],ARP=ARPS[setIdx];
       const chord=CH[Math.floor(step/8)%CH.length],s=step%8;
       voice(chord.notes[ARP[s]],nextT,STEP*0.9,'triangle',0.13);        // melody
       if(s===0||s===4)voice(chord.bass,nextT,STEP*1.7,'sine',0.22);     // bass on the beat
@@ -592,6 +633,7 @@ const S={
   level:1, xp:0, xpNeed:120,
   shoes:0, magnet:0, mkt:0, glove:0,
   ridesBuilt:0, served:0, tut:0, t:0,
+  goals:[],
 };
 let displayCash=S.cash;
 
@@ -2848,13 +2890,17 @@ $('shopBtn').onclick=()=>{renderShop();$('shopModal').classList.add('open');snd.
 $('closeShop').onclick=()=>{$('shopModal').classList.remove('open');snd.click();};
 $('helpBtn').onclick=()=>{$('helpModal').classList.add('open');snd.click();};
 $('closeHelp').onclick=()=>{$('helpModal').classList.remove('open');snd.click();};
-['shopModal','helpModal','settingsModal','leaderModal'].forEach(id=>{
+['shopModal','helpModal','settingsModal','leaderModal','goalsModal'].forEach(id=>{
   $(id).addEventListener('click',e=>{if(e.target===$(id))$(id).classList.remove('open');});
 });
 $('leaderBtn').onclick=()=>{openLeaderboard();snd.click();};
 $('closeLeader').onclick=()=>{$('leaderModal').classList.remove('open');snd.click();};
 $('leaderShare').onclick=shareToX;
+$('leaderInvite').onclick=shareInvite;
 $('landingLeader').addEventListener('click',e=>{e.stopPropagation();openLeaderboard();});
+$('goalsBtn').onclick=()=>{openGoals();snd.click();};
+$('closeGoals').onclick=()=>{$('goalsModal').classList.remove('open');snd.click();};
+$('cloudBtn').onclick=()=>cloudRestore($('cloudBtn'));
 $('muteBtn').onclick=()=>{applySfxOn(!SET.sfxOn);if(SET.sfxOn)snd.click();};
 $('startOv').addEventListener('click',()=>{
   if(S.started)return;
@@ -2864,10 +2910,11 @@ $('startOv').addEventListener('click',()=>{
   if(SET.musicOn)music.start();
   snd.click();last=performance.now();
   fetch('/api/play',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:PID})}).catch(()=>{});
-  setTimeout(()=>{                                  // welcome-back + daily bonus, once we're in
+  setTimeout(()=>{                                  // welcome-back + daily + invite bonus, once we're in
     if(pendingWelcome){toast('🎡 Welcome back! Your park earned 💵 '+fmt(pendingWelcome.earn)+' while you were away.','gold');pendingWelcome=null;}
+    if(refWelcome){toast('🎁 Welcome! +3 💎 from your invite link.','gold');refWelcome=false;}
     const dg=dailyReward();if(dg>0)toast('🎁 Daily bonus: +'+dg+' 💎 gems!','gold');
-    submitScore();saveGame();
+    checkGoals();submitScore();saveGame();
   },1000);
 });
 
@@ -3047,6 +3094,7 @@ const introReel=(function(){
         live=true;draw(d.total,d.online);
         if(d.name&&!playerName){playerName=d.name;try{localStorage.setItem('pk_name',playerName);}catch(e){}
           if($('settingsModal').classList.contains('open'))updateProfile();}
+        if(d.refRewards)claimRefRewards(d.refRewards);
       })
       .catch(()=>{if(!live)fallback();});
   }
@@ -3085,7 +3133,8 @@ function serialize(){
   for(const z of ZONES)if(z.unlocked)zones.push({i:z.i,lvl:(z.pad&&z.pad.built?z.pad.built.lvl:1)});
   return {v:SAVE_VER,t:Date.now(),
     S:{cash:S.cash,gems:S.gems,tickets:S.tickets,level:S.level,xp:S.xp,xpNeed:S.xpNeed,
-       shoes:S.shoes,magnet:S.magnet,mkt:S.mkt,glove:S.glove,served:S.served,tut:S.tut},
+       shoes:S.shoes,magnet:S.magnet,mkt:S.mkt,glove:S.glove,served:S.served,tut:S.tut,
+       goals:(S.goals||[]).slice()},
     zones,staff:!!staff,booth:booth.lvl};
 }
 function saveGame(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(serialize()));}catch(e){}}
@@ -3099,6 +3148,7 @@ function loadGame(){                                    // fully defensive: any 
     const ss=d.S;
     for(const k of ['cash','gems','tickets','level','xp','xpNeed','shoes','magnet','mkt','glove','served','tut'])
       if(typeof ss[k]==='number'&&isFinite(ss[k]))S[k]=ss[k];
+    if(Array.isArray(ss.goals))S.goals=ss.goals.filter(x=>typeof x==='string');
     S.ridesBuilt=0;
     if(Array.isArray(d.zones))for(const zz of d.zones){
       const z=ZONES[zz.i];if(!z||z.unlocked)continue;
@@ -3151,11 +3201,97 @@ function shareToX(){
     +'&url='+encodeURIComponent('https://parktopia.fun')+'&via=Parktopiafun';
   window.open(url,'_blank','noopener');
 }
-/* auto-save + periodic score submit while playing */
+
+/* ---------- Goals / quests ---------- */
+const GOALS=[
+  {id:'ride1',  ico:'🎠', t:'Open your first ride',      chk:()=>rides.length>=1,          g:1},
+  {id:'ride3',  ico:'🎡', t:'Open 3 attractions',        chk:()=>rides.length>=3,          g:2},
+  {id:'up3',    ico:'⬆️', t:'Upgrade a ride to Lv 3',     chk:()=>rides.some(r=>r.lvl>=3),  g:2},
+  {id:'staff',  ico:'🧑‍💼',t:'Hire a Collector',          chk:()=>!!staff,                  g:3},
+  {id:'cash10k',ico:'💰', t:'Bank $10,000 cash',         chk:()=>S.cash>=1e4,              g:2},
+  {id:'ride6',  ico:'🎢', t:'Open 6 attractions',        chk:()=>rides.length>=6,          g:3},
+  {id:'lvl5',   ico:'🎖️', t:'Reach Level 5',             chk:()=>S.level>=5,               g:3},
+  {id:'up5',    ico:'⭐', t:'Max a ride to Lv 5',         chk:()=>rides.some(r=>r.lvl>=5),  g:4},
+  {id:'val100k',ico:'🌟', t:'Park worth $100K',          chk:()=>parkValue()>=1e5,         g:5},
+  {id:'ride12', ico:'🏰', t:'Open all 12 attractions',   chk:()=>rides.length>=12,         g:10},
+  {id:'lvl10',  ico:'👑', t:'Reach Level 10',            chk:()=>S.level>=10,              g:6},
+  {id:'val1m',  ico:'💫', t:'Park worth $1,000,000',     chk:()=>parkValue()>=1e6,         g:15},
+  {id:'val10m', ico:'🏆', t:'Park worth $10,000,000',    chk:()=>parkValue()>=1e7,         g:40},
+];
+function checkGoals(){
+  if(!S.started)return;
+  for(const q of GOALS){
+    if(S.goals.indexOf(q.id)>=0)continue;
+    let ok=false;try{ok=q.chk();}catch(e){}
+    if(ok){
+      S.goals.push(q.id);S.gems+=q.g;popPill('pillGems');
+      toast('🎯 Goal: '+q.t+'  +'+q.g+' 💎','gold');
+      const b=$('goalsBtn');if(b)b.classList.add('pulse');
+      saveGame();
+    }
+  }
+}
+function openGoals(){
+  const b=$('goalsBtn');if(b)b.classList.remove('pulse');
+  $('goalCount').textContent=S.goals.length+' / '+GOALS.length;
+  $('goalRows').innerHTML=GOALS.map(q=>{
+    const d=S.goals.indexOf(q.id)>=0;
+    return '<div class="glRow'+(d?' done':'')+'"><span class="glIco">'+q.ico+'</span>'
+      +'<span class="glT">'+esc(q.t)+'</span><span class="glR">'+(d?'✓ done':'+'+q.g+' 💎')+'</span></div>';
+  }).join('');
+  $('goalsModal').classList.add('open');
+}
+
+/* ---------- Referral (invite friends → both earn gems) ---------- */
+let refWelcome=false;
+function inviteLink(){return 'https://parktopia.fun/?ref='+encodeURIComponent(PID);}
+function applyRefFromURL(){
+  let ref=null;try{ref=new URLSearchParams(location.search).get('ref');}catch(e){}
+  if(ref){try{if(location.search)history.replaceState(null,'',location.pathname);}catch(e){}}
+  let used=false;try{used=!!localStorage.getItem('pk_reffed');}catch(e){}
+  if(!ref||used||ref===PID)return;
+  fetch('/api/ref',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:PID,ref:ref})})
+    .then(r=>r.json()).then(d=>{if(d&&d.ok){try{localStorage.setItem('pk_reffed','1');}catch(e){}S.gems+=3;refWelcome=true;}}).catch(()=>{});
+}
+function claimRefRewards(n){
+  if(!n||n<=0)return;
+  fetch('/api/claimref',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:PID})})
+    .then(r=>r.json()).then(d=>{const c=(d&&d.claimed)||0;if(c>0){S.gems+=c*5;popPill('pillGems');
+      toast('🎉 '+c+' friend'+(c>1?'s':'')+' joined with your link! +'+(c*5)+' 💎','gold');}}).catch(()=>{});
+}
+function shareInvite(){
+  const text='Come build your theme-park empire with me in PARKTOPIA 🎡\nWe both get 💎 gems 👇';
+  window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(text)
+    +'&url='+encodeURIComponent(inviteLink())+'&via=Parktopiafun','_blank','noopener');
+}
+function copyInvite(btn){
+  const done=()=>{if(btn){const o=btn.textContent;btn.textContent='✓ Copied!';setTimeout(()=>{btn.textContent=o;},1300);}};
+  try{navigator.clipboard.writeText(inviteLink()).then(done,done);}catch(e){done();}
+}
+
+/* ---------- Wallet cloud save (cross-device, explicit restore) ---------- */
+function cloudBackup(){
+  if(!(wallet&&wallet.addr)||!S.started)return;
+  fetch('/api/csave',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({id:PID,wallet:wallet.addr,blob:JSON.stringify(serialize())})}).catch(()=>{});
+}
+function cloudRestore(btn){
+  const msg=$('walletMsg');
+  if(!(wallet&&wallet.addr)){setMsg(msg,'err','Connect a wallet first.');return;}
+  if(btn)btn.textContent='Loading…';
+  fetch('/api/cload?key='+encodeURIComponent(wallet.addr)).then(r=>r.json()).then(d=>{
+    if(d&&d.ok&&d.blob){try{localStorage.setItem(SAVE_KEY,d.blob);}catch(e){}location.reload();}
+    else{setMsg(msg,'info','No cloud save found for this wallet yet.');if(btn)btn.textContent='☁️ Restore from cloud';}
+  }).catch(()=>{setMsg(msg,'err','Cloud restore failed — try again.');if(btn)btn.textContent='☁️ Restore from cloud';});
+}
+
+/* auto-save + periodic score submit / goals / cloud backup while playing */
 setInterval(()=>{if(S.started)saveGame();},4000);
 setInterval(()=>{if(S.started)submitScore();},20000);
-window.addEventListener('visibilitychange',()=>{if(document.hidden&&S.started)saveGame();});
-window.addEventListener('pagehide',()=>{if(S.started)saveGame();});
+setInterval(()=>{if(S.started)checkGoals();},1500);
+setInterval(cloudBackup,15000);
+window.addEventListener('visibilitychange',()=>{if(document.hidden&&S.started){saveGame();cloudBackup();}});
+window.addEventListener('pagehide',()=>{if(S.started){saveGame();cloudBackup();}});
 
 /* ---------- Main loop ---------- */
 let last=performance.now();
@@ -3182,6 +3318,7 @@ if(VIS){
   fatal('Three.js gagal load dari CDN.\nCek koneksi internet lalu reload halaman ini.');
 }
 try{loadGame();displayCash=S.cash;}catch(e){}   // restore saved progress (never bricks the game)
+try{applyRefFromURL();}catch(e){}               // credit a ?ref invite link
 requestAnimationFrame(loop);
 </script>
 </body>
