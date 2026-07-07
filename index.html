@@ -2785,23 +2785,56 @@ function visSync(dt){
   renderer.render(scene,camera);
   drawOverlay();
 }
+function drawGuide(tgt,trail){
+  // Marching breadcrumb dots along the ground from the player toward the target,
+  // so players always know where to go next (e.g. the next NEW LAND sign to buy).
+  if(trail&&typeof player!=='undefined'&&player){
+    const px=player.x,py=player.y,tx=tgt.x,ty=tgt.y;
+    const gd=Math.hypot(tx-px,ty-py);
+    if(gd>2.4){
+      const N=clamp(Math.round(gd/1.5),5,16),flow=(S.t*0.8)%1;
+      for(let i=0;i<N;i++){
+        const f=(i+flow)/N; if(f>=0.99)continue;
+        const wx=px+(tx-px)*f,wy=py+(ty-py)*f;
+        const v=new THREE.Vector3(wx,0.14,wy).project(camera);
+        if(v.z>1)continue;                                   // behind camera
+        const sx=(v.x*.5+.5)*Wpx,sy=(-v.y*.5+.5)*Hpx;
+        const sz=5+8*(1-f),a=Math.sin(Math.PI*f)*0.85;       // fade + shrink toward target
+        fxCtx.globalAlpha=clamp(a,0,0.85);
+        fxCtx.fillStyle='#ffd23f';fxCtx.strokeStyle='#7a4b00';fxCtx.lineWidth=2;
+        fxCtx.beginPath();fxCtx.arc(sx,sy,sz,0,7);fxCtx.fill();fxCtx.stroke();
+      }
+      fxCtx.globalAlpha=1;
+    }
+  }
+  // Bobbing arrow above the target — clamps to the screen edge when off-screen.
+  const v=new THREE.Vector3(tgt.x,.9,tgt.y).project(camera);
+  const sx=(v.x*.5+.5)*Wpx,sy=(-v.y*.5+.5)*Hpx;
+  const m=58,bo=Math.sin(S.t*6)*8;
+  let x=sx,y=sy-84+bo,rot=Math.PI;
+  if(v.z>1||sx<m||sx>Wpx-m||sy<m||sy>Hpx-m){
+    let ex=sx,ey=sy;if(v.z>1){ex=Wpx-sx;ey=Hpx-sy;}         // reflect if behind camera
+    x=clamp(ex,m,Wpx-m);y=clamp(ey,m,Hpx-m);
+    rot=Math.atan2(ey-y,ex-x)+Math.PI/2;
+    fxCtx.fillStyle='rgba(22,19,45,.85)';
+    fxCtx.beginPath();fxCtx.arc(x,y,20,0,7);fxCtx.fill();
+  }
+  fxCtx.save();fxCtx.translate(x,y);fxCtx.rotate(rot);
+  fxCtx.fillStyle='#ffd23f';fxCtx.strokeStyle='#7a4b00';fxCtx.lineWidth=3;
+  fxCtx.beginPath();fxCtx.moveTo(0,-13);fxCtx.lineTo(11,6);fxCtx.lineTo(0,1);fxCtx.lineTo(-11,6);
+  fxCtx.closePath();fxCtx.fill();fxCtx.stroke();fxCtx.restore();
+}
 function drawOverlay(){
   fxCtx.clearRect(0,0,Wpx,Hpx);
-  if(S.started&&S.tut<5&&tutFrameTgt){
-    const v=new THREE.Vector3(tutFrameTgt.x,.9,tutFrameTgt.y).project(camera);
-    const sx=(v.x*.5+.5)*Wpx,sy=(-v.y*.5+.5)*Hpx;
-    const m=58,bo=Math.sin(S.t*6)*8;
-    let x=sx,y=sy-84+bo,rot=Math.PI;
-    if(sx<m||sx>Wpx-m||sy<m||sy>Hpx-m){
-      x=clamp(sx,m,Wpx-m);y=clamp(sy,m,Hpx-m);
-      rot=Math.atan2(sy-y,sx-x)+Math.PI/2;
-      fxCtx.fillStyle='rgba(22,19,45,.85)';
-      fxCtx.beginPath();fxCtx.arc(x,y,20,0,7);fxCtx.fill();
+  if(S.started){
+    let tgt=null,trail=false;
+    if(S.tut>=1&&S.tut<=3){
+      tgt=tutTarget();                                       // early tutorial: learn the ride loop
+    }else{
+      const z=ZONES.find(z=>!z.unlocked&&reqOk(z));          // otherwise always guide to the next land
+      if(z&&z.sign){tgt=z.sign;trail=true;}
     }
-    fxCtx.save();fxCtx.translate(x,y);fxCtx.rotate(rot);
-    fxCtx.fillStyle='#ffd23f';fxCtx.strokeStyle='#7a4b00';fxCtx.lineWidth=3;
-    fxCtx.beginPath();fxCtx.moveTo(0,-13);fxCtx.lineTo(11,6);fxCtx.lineTo(0,1);fxCtx.lineTo(-11,6);
-    fxCtx.closePath();fxCtx.fill();fxCtx.stroke();fxCtx.restore();
+    if(tgt)drawGuide(tgt,trail);
   }
   for(const c of confs){
     fxCtx.save();fxCtx.translate(c.x,c.y);fxCtx.rotate(c.rot);
