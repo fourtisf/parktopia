@@ -243,9 +243,17 @@
     padding:14px 46px;border-radius:22px;box-shadow:0 6px 0 #c99a12,0 14px 26px rgba(0,0,0,.45);
     animation:breathe 1.6s ease-in-out infinite;}
   @keyframes breathe{0%,100%{transform:scale(1);}50%{transform:scale(1.06);}}
-  #caPill{background:rgba(22,19,45,.88);border:2px solid var(--gold);color:var(--gold);
-    font-weight:800;font-size:15px;letter-spacing:2.5px;padding:9px 28px;border-radius:20px;
-    box-shadow:0 0 20px rgba(255,210,63,.28);}
+  #caPill{display:inline-flex;align-items:center;gap:8px;background:rgba(22,19,45,.88);border:2px solid var(--gold);color:var(--gold);
+    font-family:inherit;font-weight:800;font-size:14px;letter-spacing:1px;padding:9px 18px;border-radius:20px;
+    box-shadow:0 0 20px rgba(255,210,63,.28);cursor:pointer;pointer-events:auto;transition:transform .12s,border-color .2s,color .2s,box-shadow .2s;}
+  #caPill:hover{transform:translateY(-1px);box-shadow:0 0 26px rgba(255,210,63,.42);}
+  #caPill:active{transform:translateY(1px);}
+  #caPill #caCopy{font-size:15px;opacity:.8;}
+  #caPill.copied{border-color:#5fd068;color:#5fd068;box-shadow:0 0 24px rgba(95,208,104,.45);}
+  #pumpLink{pointer-events:auto;text-decoration:none;background:linear-gradient(180deg,#7fe08a,#3fae4c);color:#08340f;
+    font-family:inherit;font-weight:800;font-size:13px;letter-spacing:.5px;padding:9px 16px;border-radius:18px;
+    border:2px solid rgba(255,255,255,.25);box-shadow:0 4px 12px rgba(0,0,0,.35);transition:transform .12s;}
+  #pumpLink:active{transform:scale(.95);}
   #landingLeader{margin-top:2px;background:rgba(22,19,45,.85);border:2px solid rgba(255,255,255,.2);color:#fff;
     font-family:inherit;font-weight:800;font-size:14px;letter-spacing:.6px;padding:8px 22px;border-radius:18px;
     cursor:pointer;pointer-events:auto;box-shadow:0 4px 12px rgba(0,0,0,.35);transition:transform .12s;}
@@ -501,7 +509,8 @@
   <div class="play">▶ &nbsp;TAP TO PLAY</div>
   <div id="landingCrypto">
     <button id="landingWallet">🔗 Connect Wallet</button>
-    <div id="caPill">💊 CA · COMING SOON</div>
+    <button id="caPill" title="Copy contract address (Solana)">💊 <span id="caText">5nCiB4…Hhpump</span> <span id="caCopy">⧉</span></button>
+    <a id="pumpLink" href="https://pump.fun/coin/5nCiB4vuvd7DP7puXdi2BScYdXFMXgGN9Zk2HmHhpump" target="_blank" rel="noopener noreferrer">pump.fun ↗</a>
   </div>
   <div class="ctl">WASD / joystick to move · stand on pads to build & upgrade<br>walk near money to collect it</div>
 </div>
@@ -3092,6 +3101,23 @@ $('pidCopy').onclick=()=>{
 };
 $('walletBtn').onclick=connectWallet;
 $('landingWallet').addEventListener('click',e=>{e.stopPropagation();connectWallet();});
+/* contract address: copy on tap, link out to pump.fun (don't start the game) */
+const PARK_CA='5nCiB4vuvd7DP7puXdi2BScYdXFMXgGN9Zk2HmHhpump';
+(function(){
+  const pill=$('caPill'),pl=$('pumpLink');
+  if(pl)pl.addEventListener('click',e=>e.stopPropagation());
+  if(!pill)return;
+  pill.addEventListener('click',e=>{
+    e.stopPropagation();
+    const t=$('caText'),old=t.textContent,c=$('caCopy'),oc=c?c.textContent:'';
+    const done=()=>{pill.classList.add('copied');t.textContent='COPIED';if(c)c.textContent='✓';
+      setTimeout(()=>{pill.classList.remove('copied');t.textContent=old;if(c)c.textContent=oc;},1400);};
+    const fallback=()=>{try{const ta=document.createElement('textarea');ta.value=PARK_CA;
+      ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();
+      document.execCommand('copy');document.body.removeChild(ta);}catch(_){}done();};
+    try{navigator.clipboard.writeText(PARK_CA).then(done,fallback);}catch(_){fallback();}
+  });
+})();
 $('muteBtn').textContent=SET.sfxOn?'🔊':'🔇';   // reflect saved SFX state at boot
 renderWallet();                                 // reflect a saved wallet on the landing button at boot
 
