@@ -343,6 +343,13 @@
     flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .idRow button{background:rgba(255,255,255,.12);border:none;color:#fff;font-family:inherit;
     font-weight:700;font-size:11px;padding:5px 10px;border-radius:8px;cursor:pointer;}
+  .statRow{display:flex;align-items:center;justify-content:space-between;margin-top:10px;
+    font-size:12.5px;font-weight:700;color:#c9cff0;}
+  .statRow .statLbl{opacity:.75;letter-spacing:.3px;}
+  .statRow .statVals{display:flex;gap:8px;margin-left:auto;}   /* right-aligned */
+  .statRow .statVals b{background:rgba(255,210,63,.14);border:1px solid rgba(255,210,63,.4);color:var(--gold);
+    font-weight:800;font-size:12.5px;padding:4px 11px;border-radius:11px;white-space:nowrap;}
+  .statRow .statVals b.pr{background:rgba(124,92,255,.16);border-color:rgba(124,92,255,.5);color:#c9b6ff;}
   .switch{position:relative;display:inline-block;width:46px;height:26px;flex:0 0 auto;cursor:pointer;}
   .switch input{opacity:0;width:0;height:0;}
   .switch .track{position:absolute;inset:0;background:rgba(255,255,255,.22);border-radius:20px;transition:.2s;}
@@ -427,6 +434,8 @@
       </div>
       <div class="setMsg" id="nameMsg"></div>
       <div class="idRow">🆔 <code id="pidView">—</code><button id="pidCopy">Copy</button></div>
+      <div class="statRow"><span class="statLbl">Level &amp; Prestige</span>
+        <span class="statVals"><b id="lvView">LV 1</b><b id="prView" class="pr">⭐ 0</b></span></div>
     </div>
 
     <div class="setSection">
@@ -3034,6 +3043,8 @@ async function connectWallet(){
 function updateProfile(){
   $('pidView').textContent=PID;
   const inp=$('nameInput');if(inp&&document.activeElement!==inp)inp.value=playerName||'';
+  const lv=$('lvView');if(lv)lv.textContent='LV '+(S.level||1);
+  const pr=$('prView');if(pr)pr.textContent='⭐ '+(S.prestige||0);
 }
 function saveName(){
   const msg=$('nameMsg'),raw=($('nameInput').value||'').trim();
