@@ -277,6 +277,20 @@
   .glRow.done .glT{opacity:.8;}
   .glR{font-weight:800;font-size:13.5px;color:var(--gold);white-space:nowrap;}
   .glRow.done .glR{color:var(--green);}
+  .eventLine{display:flex;align-items:center;gap:9px;background:rgba(255,210,63,.1);border:1.5px solid rgba(255,210,63,.35);
+    border-radius:12px;padding:9px 13px;font-size:13.5px;font-weight:700;color:#ffe9a8;margin:8px 0 10px;}
+  .eventLine b{color:var(--gold);} .eventLine .evIc{font-size:20px;}
+  .prestigeCard{background:linear-gradient(180deg,rgba(124,92,255,.16),rgba(124,92,255,.05));
+    border:1.5px solid rgba(124,92,255,.5);border-radius:16px;padding:13px 14px;margin-bottom:12px;}
+  .prestigeCard .pTop{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;}
+  .prestigeCard .pStar{font-weight:800;font-size:17px;color:#fff;}
+  .prestigeCard .pBonus{font-weight:800;font-size:14px;color:#c9b6ff;}
+  .prestigeCard .pBar{height:9px;border-radius:6px;background:rgba(255,255,255,.14);overflow:hidden;}
+  .prestigeCard .pBar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#9a7bff,#ffd23f);}
+  .prestigeCard .pReq{font-size:12.5px;font-weight:700;color:#c9cff0;margin:8px 0 10px;}
+  .prestigeCard .pReq b{color:var(--gold);}
+  .prestigeCard #prestigeBtn{width:100%;background:linear-gradient(180deg,#9a7bff,#6d4fe0);box-shadow:0 3px 0 #4a32b0;}
+  .prestigeCard #prestigeBtn.dim{opacity:.5;}
   #leaderShare{width:100%;}
   #landingCrypto{margin-top:6px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;}
   #landingWallet{background:linear-gradient(180deg,#7C5CFF,#5a3fd6);border:2px solid rgba(255,255,255,.22);
@@ -453,6 +467,8 @@
 <div class="modalBg" id="goalsModal">
   <div class="modal">
     <h2>🎯 Goals <span id="goalCount" class="goalCount">0 / 0</span> <button id="closeGoals">✕</button></h2>
+    <div id="eventLine" class="eventLine"></div>
+    <div id="prestigePanel"></div>
     <p class="tip">Complete goals to earn 💎 gems. New challenges unlock as your park grows.</p>
     <div id="goalRows"></div>
   </div>
@@ -633,7 +649,7 @@ const S={
   level:1, xp:0, xpNeed:120,
   shoes:0, magnet:0, mkt:0, glove:0,
   ridesBuilt:0, served:0, tut:0, t:0,
-  goals:[],
+  goals:[], prestige:0,
 };
 let displayCash=S.cash;
 
@@ -1029,7 +1045,7 @@ function updateRides(dt){
     }else{
       r.t+=dt;r.anim=r.t/def.dur;r.spin+=dt*2.4;
       if(r.t>=def.dur){
-        const pay=Math.round(def.inc*incMul(r)*gloveMul());
+        const pay=Math.round(def.inc*incMul(r)*gloveMul()*incomeMul());
         for(const g of r.riders){
           if(VIS)visUnseatGuest(g);
           g.x=r.pad.exit.x+rnd(-0.4,0.4);g.y=r.pad.exit.y+rnd(-0.4,0.4);
@@ -2947,10 +2963,12 @@ $('startOv').addEventListener('click',()=>{
   if(SET.musicOn)music.start();
   snd.click();last=performance.now();
   fetch('/api/play',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:PID})}).catch(()=>{});
-  setTimeout(()=>{                                  // welcome-back + daily + invite bonus, once we're in
+  setTimeout(()=>{                                  // welcome-back + daily + invite + event, once we're in
+    if(pendingPrestige){toast('⭐ Prestige '+S.prestige+'! +'+(25*S.prestige)+'% income — forever.','gold');pendingPrestige=false;}
     if(pendingWelcome){toast('🎡 Welcome back! Your park earned 💵 '+fmt(pendingWelcome.earn)+' while you were away.','gold');pendingWelcome=null;}
     if(refWelcome){toast('🎁 Welcome! +3 💎 from your invite link.','gold');refWelcome=false;}
     const dg=dailyReward();if(dg>0)toast('🎁 Daily bonus: +'+dg+' 💎 gems!','gold');
+    const ev=eventDef();toast(ev.ic+' Today: '+ev.name,'gold');
     checkGoals();submitScore();saveGame();
   },1000);
 });
@@ -3154,15 +3172,37 @@ const introReel=(function(){
 
 /* ================= Progress: save / load / offline / daily / leaderboard / share ================= */
 const SAVE_KEY='pk_save', SAVE_VER=1;
+/* ---------- Daily events + prestige (global income / gem multipliers) ---------- */
+const EVENTS=[
+  {id:'double',ic:'💰',name:'Double Cash Day',desc:'All ride income ×2 — today only!',inc:2,  gem:1},
+  {id:'rush',  ic:'📈',name:'Rush Hour',      desc:'Ride income ×1.5 all day.',        inc:1.5,gem:1},
+  {id:'gems',  ic:'💎',name:'Gem Rush',       desc:'2× gems from goals & bonuses today.',inc:1, gem:2},
+  {id:'calm',  ic:'🌤️',name:'Steady Day',     desc:'A calm, breezy day at the park.',   inc:1,  gem:1},
+];
+function eventDef(){return EVENTS[Math.floor(Date.now()/864e5)%EVENTS.length];}
+function incomeMul(){return (1+0.25*(S.prestige||0))*(eventDef().inc||1);}   // prestige + event
+function gemMul(){return eventDef().gem||1;}
+function prestigeReq(){return 1e6*Math.pow(4,S.prestige||0);}                 // 1M, 4M, 16M, ...
+function canPrestige(){return parkValue()>=prestigeReq();}
+let pendingPrestige=false;
+function doPrestige(){
+  if(!canPrestige())return;
+  try{
+    localStorage.setItem('pk_prestige',String((S.prestige||0)+1));
+    localStorage.setItem('pk_carry',JSON.stringify({gems:S.gems}));   // keep gems across the reset
+    localStorage.removeItem(SAVE_KEY);
+  }catch(e){}
+  location.reload();
+}
 function parkValue(){
   let v=Math.max(0,S.cash);
   for(const r of rides)v+=r.baseCost*incMul(r);        // each ride is worth more as it levels
-  v+=S.gems*120+(S.level-1)*400;
+  v+=S.gems*120+(S.level-1)*400+(S.prestige||0)*500000; // prestige adds standing on the board
   return Math.round(v);
 }
 function idleRatePerSec(){                              // theoretical passive income of the park
   let rate=0;
-  for(const r of rides){const d=DEFS[r.type];rate+=(d.inc*incMul(r)*capOf(r))/Math.max(1.5,d.dur);}
+  for(const r of rides){const d=DEFS[r.type];rate+=(d.inc*incMul(r)*capOf(r)*incomeMul())/Math.max(1.5,d.dur);}
   return rate;
 }
 function serialize(){
@@ -3209,7 +3249,7 @@ function dailyReward(){
   const today=new Date().toISOString().slice(0,10);
   if(last===today)return 0;
   try{localStorage.setItem('pk_daily',today);}catch(e){}
-  S.gems+=3;return 3;
+  const dg=Math.round(3*gemMul());S.gems+=dg;return dg;
 }
 function esc(s){return String(s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));}
 function submitScore(){
@@ -3261,8 +3301,9 @@ function checkGoals(){
     if(S.goals.indexOf(q.id)>=0)continue;
     let ok=false;try{ok=q.chk();}catch(e){}
     if(ok){
-      S.goals.push(q.id);S.gems+=q.g;popPill('pillGems');
-      toast('🎯 Goal: '+q.t+'  +'+q.g+' 💎','gold');
+      const gg=Math.round(q.g*gemMul());
+      S.goals.push(q.id);S.gems+=gg;popPill('pillGems');
+      toast('🎯 Goal: '+q.t+'  +'+gg+' 💎','gold');
       const b=$('goalsBtn');if(b)b.classList.add('pulse');
       saveGame();
     }
@@ -3270,6 +3311,23 @@ function checkGoals(){
 }
 function openGoals(){
   const b=$('goalsBtn');if(b)b.classList.remove('pulse');
+  const ev=eventDef();
+  $('eventLine').innerHTML='<span class="evIc">'+ev.ic+'</span> Today: <b>'+esc(ev.name)+'</b> — '+esc(ev.desc);
+  // prestige panel
+  const pv=parkValue(),req=prestigeReq(),pct=Math.min(100,Math.round(pv/req*100)),ready=canPrestige();
+  $('prestigePanel').innerHTML=
+    '<div class="prestigeCard">'
+    +'<div class="pTop"><span class="pStar">⭐ Prestige '+(S.prestige||0)+'</span>'
+    +'<span class="pBonus">+'+(25*(S.prestige||0))+'% income</span></div>'
+    +'<div class="pBar"><i style="width:'+pct+'%"></i></div>'
+    +'<div class="pReq">'+(ready?'Ready — reset for <b>+25% income forever</b>':'$'+fmt(pv)+' / $'+fmt(req)+' to prestige')+'</div>'
+    +'<button id="prestigeBtn" class="act'+(ready?'':' dim')+'">⭐ Prestige — +25% income</button>'
+    +'</div>';
+  const pb=$('prestigeBtn');
+  if(pb)pb.onclick=()=>{
+    if(!canPrestige())return;
+    if(confirm('Prestige will RESET your park (rides & cash) but grant +25% income PERMANENTLY and keep your 💎 gems. Continue?'))doPrestige();
+  };
   $('goalCount').textContent=S.goals.length+' / '+GOALS.length;
   $('goalRows').innerHTML=GOALS.map(q=>{
     const d=S.goals.indexOf(q.id)>=0;
@@ -3355,6 +3413,9 @@ if(VIS){
   fatal('Three.js gagal load dari CDN.\nCek koneksi internet lalu reload halaman ini.');
 }
 try{loadGame();displayCash=S.cash;}catch(e){}   // restore saved progress (never bricks the game)
+try{S.prestige=Math.max(0,parseInt(localStorage.getItem('pk_prestige')||'0',10)||0);}catch(e){}
+try{const c=JSON.parse(localStorage.getItem('pk_carry')||'null');
+  if(c){S.gems+=(c.gems|0);pendingPrestige=true;localStorage.removeItem('pk_carry');}}catch(e){}
 try{applyRefFromURL();}catch(e){}               // credit a ?ref invite link
 requestAnimationFrame(loop);
 </script>
